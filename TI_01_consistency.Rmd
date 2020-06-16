@@ -130,3 +130,81 @@ Using the consistency scores as a guide, we revisited the most problematic categ
 3. *M_durative*: coding instructions were sharpened to clarify that this targets events, not states and to clarify its relation to M_distribution.
 
 The original coding sheet is available as X and the updated coding sheet as X_version_2.
+
+## Calibrated coding
+
+After reformulating and revising the coding scheme, we discussed all inconsistent cases to reach a consensus and recoded accordingly. Here we check whether we now indeed have a canonical, ground truth set of coded data.
+
+```{r consistency_2ndround}
+d1 = read_excel("data\\ideophones_coded_MD.xlsx") %>% arrange(filename)
+d2 = read_excel("data\\ideophones_coded_SP.xlsx") %>% arrange(filename)
+d2 <- d2[,-c(1:7)] # remove non-unique fields except filename prior to merge
+
+d <- merge(d1,d2,by="filename")
+
+d.F <- d %>%
+  dplyr::select(c("filename","ideophone","meaning","meaning_NL"),starts_with("F_")) %>%
+  dplyr::select(-starts_with("F_notes"),everything()) # put note fields at end
+
+d.M <- d %>%
+  dplyr::select(c("filename","ideophone","meaning","meaning_NL"),starts_with("M_")) %>%
+  dplyr::select(-starts_with("M_notes"),everything()) # put note fields at end
+
+# function to get the names of coding categories (note: this presupposes there is a coder _MD, change as needed)
+get_coding_categories <- function(data) {
+  coder_1_names <- data %>% dplyr::select(ends_with("_MD")) %>% names()
+  gsub('_MD','',coder_1_names)
+}
+
+# get list of coding categories and create dataframes for the consistency values
+F_categories <- get_coding_categories(d.F)
+F_consistency <- as.data.frame(F_categories) %>% dplyr::rename(category = F_categories)
+M_categories <- get_coding_categories(d.M)
+M_consistency <- as.data.frame(M_categories) %>% dplyr::rename(category = M_categories)
+
+F_consistency$agree <- NA
+F_consistency$kappa <- NA
+for (i in 1:(length(F_categories)-1)) { # -1 to exclude the notes column
+  F_consistency$agree[i] <- (get_agree(data=d.F,cat=F_categories[i]))
+  F_consistency$kappa[i] <- (get_kappa(data=d.F,cat=F_categories[i]))
+}
+F_consistency
+
+```
+
+Hmm, a consistency check at this point shows we're nearly there but we're not 100% consistent on F_redup, F_monosyllabic and F_vowelquality and F_finallength. We can export only those columns to have a quick check.
+
+```{r inconsistency_output}
+
+inconsistent <- c('F_redup','F_monosyllabic','F_vowelquality','F_finallength')
+d.F.inconsistent <- d.F %>%
+  dplyr::select(filename,ideophone,meaning,meaning_NL,matches(paste(inconsistent,collapse="|"))) %>%
+  mutate(F_redup_C = ifelse(F_redup_MD == F_redup_SP,1,0),
+         F_monosyllabic_C = ifelse(F_monosyllabic_MD == F_monosyllabic_SP,1,0),
+         F_vowelquality_C = ifelse(F_vowelquality_MD == F_vowelquality_SP,1,0),
+         F_finallength_C = ifelse(F_finallength_MD == F_finallength_SP,1,0)) %>%
+  mutate(check = F_redup_C + F_monosyllabic_C + F_vowelquality_C + F_finallength_C) %>%
+  filter(check < 4)
+d.F.inconsistent <- d.F.inconsistent[, order(names(d.F.inconsistent))]
+
+write_xlsx(d.F.inconsistent,path="data\\ideophones_F_consistency_2ndround.xlsx")
+
+```
+
+Ultimately we want to output a consensus or ground truth file `ideophones_coded.xlsx`, to be used in the next step of the analyses.
+
+```{r write_final}
+
+# for now I'm taking just one coder
+d.coded <- read_excel("data\\ideophones_coded_SP.xlsx") %>% 
+  arrange(filename) %>%
+  dplyr::select(-matches('notes'))
+names(d.coded) <- gsub('_SP','',names(d.coded))
+
+notes <- d %>% dplyr::select(filename,matches('notes'))
+
+d.coded <- left_join(d.coded,notes)
+
+write_xlsx(d.coded,path="data\\ideophones_coded.xlsx")
+
+```
