@@ -1,0 +1,64 @@
+---
+  title: "Triangulating iconicity: Using coding to predict experimental outcomes"
+author: "Mark Dingemanse & Stella Punselie"
+date: "Updated `r format(Sys.Date())`"
+output: github_document
+editor_options: 
+  chunk_output_type: console
+---
+  
+  ```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=8, fig.height=6, fig.path='out/',
+                      echo=TRUE, warning=FALSE, message=FALSE)
+
+```
+
+Code notebook for a study of the relation between linguistically informed iconicity coding and experimentally collected guessability scores.
+
+## Setup
+
+```{r preliminaries, results="hide"}
+# Packages
+list.of.packages <- c("tidyverse","readxl","writexl")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+lapply(list.of.packages, require, character.only=T)
+
+# useful functions
+`%notin%` <- function(x,y) !(x %in% y) 
+mean.na <- function(x) mean(x, na.rm = T)
+sd.na <- function(x) sd(x, na.rm = T)
+
+
+```
+
+## Data
+Let's first load the original data and generate derivative XLS files to aid in the calibration.
+
+```{r data}
+
+d1 = read_excel("data\\ideophones_coded_MD_original.xlsx") %>% arrange(filename)
+d2 = read_excel("data\\ideophones_coded_SP_original.xlsx") %>% arrange(filename)
+d2 <- d2[,-c(1:7)] # remove non-unique fields except filename prior to merge
+
+d <- merge(d1,d2,by="filename")
+
+# sanity check: are all ideophones in d1 and d2 also in d? (0 = yes)
+d1$filename[d1$filename %notin% d$filename]
+d2$filename[d2$filename %notin% d$filename]
+
+d.F <- d %>%
+  dplyr::select(c("filename","ideophone"),starts_with("F_")) %>%
+  dplyr::select(-starts_with("F_notes"),everything()) # put note fields at end
+write_xlsx(d.F,path="data\\ideophones_F_consistency.xlsx")
+
+d.M <- d %>%
+  dplyr::select(c("filename","ideophone"),starts_with("M_")) %>%
+  dplyr::select(-starts_with("M_notes"),everything()) # put note fields at end
+write_xlsx(d.M,path="data\\ideophones_M_consistency.xlsx")
+
+# function to get the names of coding categories (note: this presupposes there is a coder _MD, change as needed)
+get_coding_categories <- function(data) {
+  coder_1_names <- data %>% dplyr::select(ends_with("_MD")) %>% names()
+  gsub('_MD','',coder_1_names)
+}

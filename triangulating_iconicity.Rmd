@@ -1,0 +1,54 @@
+---
+title: "Triangulating iconicity"
+author: "Mark Dingemanse & Stella Punselie"
+date: "Updated `r format(Sys.Date())`"
+output: github_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=8, fig.height=6, fig.path='out/',
+                      echo=TRUE, warning=FALSE, message=FALSE)
+
+```
+
+## Predicting iconicity
+Intro
+
+## Setup
+
+```{r preliminaries, results="hide"}
+# Clear workspace
+rm(list=ls())
+# Packages
+list.of.packages <- c("ggplot2","dplyr","tidyr","readxl","ggthemes","lme4","viridis","stringdist","VGAM")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+lapply(list.of.packages, require, character.only=T)
+
+# gg_jitterbox
+source("gg_jitterbox.R")
+
+```
+
+## Data
+
+```{r data}
+
+d1 = read_excel("data\\ideophones_for_coding_new_MD.xlsx")
+d2 = read_excel("data\\ideophones_for_coding_new_SP.xlsx")
+
+# add logodds (it's safer to predict against logodds than raw proportion correct)
+d <- d %>%
+  mutate(cumulative_congruence = FM_congruent) %>%
+  group_by(paper) %>%
+  mutate(logodds = probit(score))
+
+# convert congruency measures to factors
+tofactors <- "language|category|paper|group|FM_congruent"
+d[,grep(tofactors,names(d))] <- lapply(d[,grep(tofactors,names(d))], as.factor)
+
+
+```
+
