@@ -19,7 +19,7 @@ Code notebook for a study of the relation between linguistically informed iconic
 
 ```{r preliminaries, results="hide"}
 # Packages
-list.of.packages <- c("tidyverse","readxl","writexl")
+list.of.packages <- c("tidyverse","readxl","writexl","ggthemes","viridis")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 lapply(list.of.packages, require, character.only=T)
@@ -33,32 +33,91 @@ sd.na <- function(x) sd(x, na.rm = T)
 ```
 
 ## Data
-Let's first load the original data and generate derivative XLS files to aid in the calibration.
+Let's load the ground truth version of the coded data.
 
 ```{r data}
 
-d1 = read_excel("data\\ideophones_coded_MD_original.xlsx") %>% arrange(filename)
-d2 = read_excel("data\\ideophones_coded_SP_original.xlsx") %>% arrange(filename)
-d2 <- d2[,-c(1:7)] # remove non-unique fields except filename prior to merge
-
-d <- merge(d1,d2,by="filename")
-
-# sanity check: are all ideophones in d1 and d2 also in d? (0 = yes)
-d1$filename[d1$filename %notin% d$filename]
-d2$filename[d2$filename %notin% d$filename]
+d = read_excel("data\\ideophones_coded.xlsx") %>% arrange(filename)
 
 d.F <- d %>%
-  dplyr::select(c("filename","ideophone"),starts_with("F_")) %>%
+  dplyr::select(c("filename","ideophone","meaning","meaning_NL"),starts_with("F_")) %>%
   dplyr::select(-starts_with("F_notes"),everything()) # put note fields at end
-write_xlsx(d.F,path="data\\ideophones_F_consistency.xlsx")
 
 d.M <- d %>%
-  dplyr::select(c("filename","ideophone"),starts_with("M_")) %>%
+  dplyr::select(c("filename","ideophone","meaning","meaning_NL"),starts_with("M_")) %>%
   dplyr::select(-starts_with("M_notes"),everything()) # put note fields at end
-write_xlsx(d.M,path="data\\ideophones_M_consistency.xlsx")
 
-# function to get the names of coding categories (note: this presupposes there is a coder _MD, change as needed)
-get_coding_categories <- function(data) {
-  coder_1_names <- data %>% dplyr::select(ends_with("_MD")) %>% names()
-  gsub('_MD','',coder_1_names)
-}
+# list of the coding categories
+coding_categories <- d %>% dplyr::select(matches('_'),-matches('notes|meaning')) %>% names()
+
+```
+
+We add congruency measures that link F and M elements.
+
+```{r congruency_1}
+
+# using ifelse() statements that essentially say, if these conditions are true, use 1, otherwise 0
+d <- d %>%
+  mutate(C_modality = ifelse(M_sound == 1,1,0),
+         C_iterative = ifelse(F_redup == 1 & M_distribution == 1,1,0),
+         C_irregular = ifelse(F_redupmod == 1 & M_irregular == 1,1,0),
+         C_punctual = ifelse(F_monosyllabic == 1 & M_punctual == 1,1,0),
+         C_durative = ifelse(F_finallength == 1 & M_durative == 1,1,0)) %>%
+  mutate(C_cumulative = C_modality + C_iterative + C_irregular + C_punctual)
+
+d %>%
+  group_by(C_cumulative) %>%
+    summarise(n=n(),mean.na(C_cumulative))
+
+```
+
+Let's add guessability from the Collabra and Language studies.
+
+```{r guessability}
+
+d.scores = read_excel("data\\ideophones_guessability.xlsx") 
+d <- left_join(d,d.scores,by=c("ideophone","language","study" = "paper"))
+
+
+```
+
+## Plots
+
+A quick first look. Needs fixing.
+
+```{r congruency_2}
+
+ggplot(data=d, aes(x=study,y=score)) +
+  theme_tufte() + ylim(0,1) + theme(legend.position="none",axis.title.x=element_blank(),plot.margin=margin(0,0,10,0)) + 
+  stat_summary(fun.y=median,geom="point",size=8,shape=21,stroke=1,fill="white",colour="#c9c9c9") +
+  geom_dotplot(colour="white",fill="#c9c9c9",stackgroups=T,dotsize=1.5,binwidth=0.01,binaxis="y",stackdir = "center")
+ggsave(filename = "figures//dotplot-all-blank.png",width=5,height = 7.5)
+
+# all data points by language
+ggplot(data=d, aes(x=study,y=score,fill=language,colour=language)) +
+  theme_tufte() + ylim(0,1) +
+  theme(legend.position="none",axis.title.x=element_blank(),plot.margin=margin(0,0,10,0)) + 
+  geom_dotplot(colour="white",alpha=0.8,color=NA,stackgroups=T,dotsize=1.5,binwidth=0.01,binaxis="y",stackdir = "center")
+ggsave(filename = "figures//dotplot-all-language.png",width=5,height = 7.5)
+
+# Westermann congruency: modality 
+ggplot(data=d, aes(x=study,y=score,fill=C_modality,colour=C_modality)) +
+  theme_tufte() + ylim(0,1) +
+  theme(legend.position="none",axis.title.x=element_blank(),plot.margin=margin(0,0,10,0)) + 
+  scale_colour_manual(values=c("#C9C9C9","#ED7953")) +   scale_fill_manual(values=c("#C9C9C9","#ED7953")) +
+  stat_summary(fun.y=median,geom="point",size=8,shape=21,stroke=1,fill="white") +
+  geom_dotplot(colour="white",stackgroups=T,dotsize=1.5,binwidth=0.01,binaxis="y",stackdir = "center")
+ggsave(filename = "figures//dotplot-congruent_modality.png",width=5,height = 7.5)
+
+# Westermann congruency: cumulative
+ggplot(data=d, aes(x=study,y=score,colour=C_cumulative,fill=C_cumulative)) +
+  theme_tufte() + ylim(0,1) +
+  theme(legend.position="none",axis.title.x=element_blank(),plot.margin=margin(0,0,10,0)) + 
+  scale_fill_viridis(option="plasma",discrete=T,begin=0.3,end=0.9) +
+  scale_colour_viridis(option="plasma",discrete=T,begin=0.3,end=0.9) +
+  stat_summary(fun.y=median,geom="point",size=8,shape=21,stroke=1,fill="white") +
+  geom_dotplot(colour="white",stackgroups = T,dotsize=1.5,binwidth=0.01,binaxis="y",stackdir = "center")
+ggsave(filename = "out//dotplot-FM_congruent.png",width=5,height = 7.5)
+
+
+```
