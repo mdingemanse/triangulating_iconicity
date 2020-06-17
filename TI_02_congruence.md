@@ -1,23 +1,15 @@
----
-title: "Triangulating iconicity: From structure mapping to guessability"
-author: "Mark Dingemanse & Stella Punselie"
-date: "Updated `r format(Sys.Date())`"
-output: github_document
-editor_options: 
-  chunk_output_type: console
----
-  
-  ```{r global_options, include=FALSE}
-knitr::opts_chunk$set(fig.width=8, fig.height=6, fig.path='figures_md/',
-                      echo=TRUE, warning=FALSE, message=FALSE)
+Triangulating iconicity: From structure mapping to guessability
+================
+Mark Dingemanse & Stella Punselie
+Updated 2020-06-17
 
-```
-
-Code notebook for a study of the relation between linguistically informed iconicity coding and experimentally collected guessability scores.
+Code notebook for a study of the relation between linguistically
+informed iconicity coding and experimentally collected guessability
+scores.
 
 ## Setup
 
-```{r preliminaries, results="hide"}
+``` r
 # Packages
 list.of.packages <- c("tidyverse","readxl","writexl","ggthemes","viridis","lme4","VGAM")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
@@ -31,22 +23,26 @@ sd.na <- function(x) sd(x, na.rm = T)
 ```
 
 ## Data
-Let's load the ground truth version of the coded data.
 
-```{r data}
+Let’s load the ground truth version of the coded data.
 
+``` r
 d = read_excel("data\\ideophones_coded.xlsx") %>% arrange(filename)
 
 coding_categories <- d %>% dplyr::select(matches('_'),-matches('notes|meaning')) %>% names()
-
 ```
 
-We add congruency measures that link F and M elements. 
+We add congruency measures that link F and M elements.
 
-* TO DO: We need to think about the evidential value of each of the congruency measures. Most apply to many words, which is good. If some of them only capture a few (as `C_durative` seems to do), they are not so interesting because they don't really capture recurring iconic mappings in the data.
+  - TO DO: We need to think about the evidential value of each of the
+    congruency measures. Most apply to many words, which is good. If
+    some of them only capture a few (as `C_durative` seems to do), they
+    are not so interesting because they don’t really capture recurring
+    iconic mappings in the data.
 
-```{r congruency_1}
+<!-- end list -->
 
+``` r
 # using ifelse() statements that essentially say, if these conditions are true, use 1, otherwise 0
 d <- d %>%
   mutate(C_modality = ifelse(M_sound == 1,1,0),
@@ -61,13 +57,20 @@ d <- d %>%
 d %>%
   group_by(C_cumulative) %>%
     summarise(n=n(),mean.na(C_cumulative))
-
 ```
+
+    ## # A tibble: 5 x 3
+    ##   C_cumulative     n `mean.na(C_cumulative)`
+    ##          <dbl> <int>                   <dbl>
+    ## 1            0    77                       0
+    ## 2            1    93                       1
+    ## 3            2    43                       2
+    ## 4            3    18                       3
+    ## 5            4     8                       4
 
 We add guessability scores from the Collabra and Language studies.
 
-```{r guessability}
-
+``` r
 d.scores = read_excel("data\\ideophones_guessability.xlsx") %>%
   dplyr::select(-category)
 d <- left_join(d,d.scores,by=c("ideophone","language","study" = "paper"))
@@ -80,21 +83,22 @@ d <- d %>%
 # convert some measures to factors for plotting
 tofactors <- paste(c("language|category|study|group",names(d[grep('C_',names(d))])),collapse = "|")
 d[,grep(tofactors,names(d))] <- lapply(d[,grep(tofactors,names(d))], as.factor)
-
-
 ```
 
 ## Plots
 
 A quick first look at some congruency measures.
 
-```{r congruency_2}
-
-
+``` r
 ggplot(data=d, aes(x=study,y=score)) +
   theme_tufte() + ylim(0,1) + theme(legend.position="none",axis.title.x=element_blank(),plot.margin=margin(0,0,10,0)) + 
   stat_summary(fun.y=median,geom="point",size=8,shape=21,stroke=1,fill="white",colour="#c9c9c9") +
   geom_dotplot(colour="white",fill="#c9c9c9",stackgroups=T,dotsize=1.5,binwidth=0.01,binaxis="y",stackdir = "center")
+```
+
+![](figures_md/congruency_2-1.png)<!-- -->
+
+``` r
 ggsave(filename = "figures//dotplot-all-blank.png",width=5,height = 7.5)
 
 # all data points by language
@@ -102,6 +106,11 @@ ggplot(data=d, aes(x=study,y=score,fill=language,colour=language)) +
   theme_tufte() + ylim(0,1) +
   #theme(legend.position="none",axis.title.x=element_blank(),plot.margin=margin(0,0,10,0)) + 
   geom_dotplot(colour="white",alpha=0.8,color=NA,stackgroups=T,dotsize=1.5,binwidth=0.01,binaxis="y",stackdir = "center")
+```
+
+![](figures_md/congruency_2-2.png)<!-- -->
+
+``` r
 ggsave(filename = "figures//dotplot-all-bylanguage.png",width=5,height = 7.5)
 
 # Westermann congruency: modality 
@@ -111,6 +120,11 @@ ggplot(data=d, aes(x=study,y=score,fill=C_modality,colour=C_modality)) +
   scale_colour_manual(values=c("#C9C9C9","#ED7953")) +   scale_fill_manual(values=c("#C9C9C9","#ED7953")) +
   stat_summary(fun.y=median,geom="point",size=8,shape=21,stroke=1,fill="white") +
   geom_dotplot(colour="white",stackgroups=T,dotsize=1.5,binwidth=0.01,binaxis="y",stackdir = "center")
+```
+
+![](figures_md/congruency_2-3.png)<!-- -->
+
+``` r
 ggsave(filename = "figures//dotplot-C_modality.png",width=5,height = 7.5)
 
 # Westermann congruency: iterativity 
@@ -120,6 +134,11 @@ ggplot(data=d, aes(x=study,y=score,fill=C_iterative,colour=C_iterative)) +
   scale_colour_manual(values=c("#C9C9C9","#ED7953")) +   scale_fill_manual(values=c("#C9C9C9","#ED7953")) +
   stat_summary(fun.y=median,geom="point",size=8,shape=21,stroke=1,fill="white") +
   geom_dotplot(colour="white",stackgroups=T,dotsize=1.5,binwidth=0.01,binaxis="y",stackdir = "center")
+```
+
+![](figures_md/congruency_2-4.png)<!-- -->
+
+``` r
 ggsave(filename = "figures//dotplot-C_iterative.png",width=5,height = 7.5)
 
 # Westermann congruency: irregular 
@@ -129,6 +148,11 @@ ggplot(data=d, aes(x=study,y=score,fill=C_irregular,colour=C_irregular)) +
   scale_colour_manual(values=c("#C9C9C9","#ED7953")) +   scale_fill_manual(values=c("#C9C9C9","#ED7953")) +
   stat_summary(fun.y=median,geom="point",size=8,shape=21,stroke=1,fill="white") +
   geom_dotplot(colour="white",stackgroups=T,dotsize=1.5,binwidth=0.01,binaxis="y",stackdir = "center")
+```
+
+![](figures_md/congruency_2-5.png)<!-- -->
+
+``` r
 ggsave(filename = "figures//dotplot-C_irregular.png",width=5,height = 7.5)
 
 # Westermann congruency: punctual 
@@ -138,6 +162,11 @@ ggplot(data=d, aes(x=study,y=score,fill=C_punctual,colour=C_punctual)) +
   scale_colour_manual(values=c("#C9C9C9","#ED7953")) +   scale_fill_manual(values=c("#C9C9C9","#ED7953")) +
   stat_summary(fun.y=median,geom="point",size=8,shape=21,stroke=1,fill="white") +
   geom_dotplot(colour="white",stackgroups=T,dotsize=1.5,binwidth=0.01,binaxis="y",stackdir = "center")
+```
+
+![](figures_md/congruency_2-6.png)<!-- -->
+
+``` r
 ggsave(filename = "figures//dotplot-C_punctual.png",width=5,height = 7.5)
 
 # Westermann congruency: durative 
@@ -147,6 +176,11 @@ ggplot(data=d, aes(x=study,y=score,fill=C_durative,colour=C_durative)) +
   scale_colour_manual(values=c("#C9C9C9","#ED7953")) +   scale_fill_manual(values=c("#C9C9C9","#ED7953")) +
   stat_summary(fun.y=median,geom="point",size=8,shape=21,stroke=1,fill="white") +
   geom_dotplot(colour="white",stackgroups=T,dotsize=1.5,binwidth=0.01,binaxis="y",stackdir = "center")
+```
+
+![](figures_md/congruency_2-7.png)<!-- -->
+
+``` r
 ggsave(filename = "figures//dotplot-C_durative.png",width=5,height = 7.5)
 
 # Westermann congruency: weight_voice 
@@ -156,6 +190,11 @@ ggplot(data=d, aes(x=study,y=score,fill=C_weight_voice,colour=C_weight_voice)) +
   scale_colour_manual(values=c("#C9C9C9","#ED7953")) +   scale_fill_manual(values=c("#C9C9C9","#ED7953")) +
   stat_summary(fun.y=median,geom="point",size=8,shape=21,stroke=1,fill="white") +
   geom_dotplot(colour="white",stackgroups=T,dotsize=1.5,binwidth=0.01,binaxis="y",stackdir = "center")
+```
+
+![](figures_md/congruency_2-8.png)<!-- -->
+
+``` r
 ggsave(filename = "figures//dotplot-C_weight_voice.png",width=5,height = 7.5)
 
 # Westermann congruency: cumulative
@@ -166,17 +205,19 @@ ggplot(data=d, aes(x=study,y=score,colour=C_cumulative,fill=C_cumulative)) +
   scale_colour_viridis(option="plasma",discrete=T,begin=0.3,end=0.9) +
   stat_summary(fun.y=median,geom="point",size=8,shape=21,stroke=1,fill="white") +
   geom_dotplot(colour="white",stackgroups = T,dotsize=1.5,binwidth=0.01,binaxis="y",stackdir = "center")
-ggsave(filename = "figures//dotplot-C_cumulative.png",width=5,height = 7.5)
-
-
 ```
 
-Probably useful to build a plotting function to avoid redundancies. To do:
-* use `aes_string()` or similar
-* add options to plot log odds, facet by semantic domain, language, or study, etc.
+![](figures_md/congruency_2-9.png)<!-- -->
 
-```{r icoplot}
+``` r
+ggsave(filename = "figures//dotplot-C_cumulative.png",width=5,height = 7.5)
+```
 
+Probably useful to build a plotting function to avoid redundancies. To
+do: \* use `aes_string()` or similar \* add options to plot log odds,
+facet by semantic domain, language, or study, etc.
+
+``` r
 # icoplot() to make creating congruency plots easier
 # to do: fix substitution error
 # * build in variables for score vs log odds, faceting by study or semantic domain, etc.
@@ -205,6 +246,4 @@ icoplot <- function(var=NULL,saveplot=FALSE) {
   
 }
 #icoplot(var="C_cumulative")
-
-
 ```

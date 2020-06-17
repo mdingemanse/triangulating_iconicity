@@ -1,7 +1,7 @@
 Triangulating iconicity: Coding, consistency & calibration
 ================
 Mark Dingemanse & Stella Punselie
-Updated 2020-06-16
+Updated 2020-06-17
 
 ## Coding consistency
 
@@ -35,33 +35,20 @@ d2 <- d2[,-c(1:7)] # remove non-unique fields except filename prior to merge
 
 d <- merge(d1,d2,by="filename")
 
-# sanity check: are all ideophones in d1 and d2 also in d? (0 = yes)
-d1$filename[d1$filename %notin% d$filename]
-```
-
-    ## character(0)
-
-``` r
-d2$filename[d2$filename %notin% d$filename]
-```
-
-    ## character(0)
-
-``` r
 d.F <- d %>%
   dplyr::select(c("filename","ideophone"),starts_with("F_")) %>%
   dplyr::select(-starts_with("F_notes"),everything()) # put note fields at end
-write_xlsx(d.F,path="data\\ideophones_F_consistency.xlsx")
+#write_xlsx(d.F,path="data\\ideophones_F_consistency.xlsx")
 
 d.M <- d %>%
   dplyr::select(c("filename","ideophone"),starts_with("M_")) %>%
   dplyr::select(-starts_with("M_notes"),everything()) # put note fields at end
-write_xlsx(d.M,path="data\\ideophones_M_consistency.xlsx")
+#write_xlsx(d.M,path="data\\ideophones_M_consistency.xlsx")
 
 # function to get the names of coding categories (note: this presupposes there is a coder _MD, change as needed)
 get_coding_categories <- function(data) {
   coder_1_names <- data %>% dplyr::select(ends_with("_MD")) %>% names()
-  gsub('_MD','',coder_1_names)
+  gsub('MD','',coder_1_names)
 }
 ```
 
@@ -84,7 +71,7 @@ get_kappa <- function(data,cat) {
 }
 
 # sanity check: does the function work? yes
-get_agree(d.F,cat='F_redup')
+get_agree(d.F,cat='F_redup_')
 ```
 
     ## [1] 99.16318
@@ -105,16 +92,16 @@ for (i in 1:(length(F_categories)-1)) { # -1 to exclude the notes column
 F_consistency
 ```
 
-    ##           category    agree     kappa
-    ## 1          F_redup 99.16318 0.9794479
-    ## 2   F_monosyllabic 99.16318 0.9629342
-    ## 3   F_partialredup 95.39749 0.7078564
-    ## 4 F_closedsyllable 99.58159 0.9912489
-    ## 5   F_vowelquality 95.39749 0.9281635
-    ## 6          F_voice 72.38494 0.5876941
-    ## 7     F_finalvowel 95.81590 0.8147000
-    ## 8     F_intonation 87.02929 0.4484068
-    ## 9          F_notes       NA        NA
+    ##            category    agree     kappa
+    ## 1          F_redup_ 99.16318 0.9794479
+    ## 2   F_monosyllabic_ 99.16318 0.9629342
+    ## 3   F_partialredup_ 95.39749 0.7078564
+    ## 4 F_closedsyllable_ 99.58159 0.9912489
+    ## 5   F_vowelquality_ 95.39749 0.9281635
+    ## 6          F_voice_ 72.38494 0.5876941
+    ## 7     F_finalvowel_ 95.81590 0.8147000
+    ## 8     F_intonation_ 87.02929 0.4484068
+    ## 9          F_notes_       NA        NA
 
 For Form, mean agreement in the original coding is **93%** and the
 lowest Kappa values are for F\_intonation, F\_voice, and
@@ -131,15 +118,15 @@ for (i in 1:(length(M_categories)-1)) {
 M_consistency
 ```
 
-    ##         category    agree     kappa
-    ## 1        M_sound 98.74477 0.9612076
-    ## 2 M_distribution 86.13445 0.7133367
-    ## 3    M_irregular 84.10042 0.4503752
-    ## 4       M_weight 59.41423 0.3496325
-    ## 5     M_punctual 95.39749 0.7069446
-    ## 6     M_durative 79.07950 0.2208893
-    ## 7       M_abrupt 96.65272 0.7469561
-    ## 8        M_notes       NA        NA
+    ##          category    agree     kappa
+    ## 1        M_sound_ 98.74477 0.9612076
+    ## 2 M_distribution_ 86.13445 0.7133367
+    ## 3    M_irregular_ 84.10042 0.4503752
+    ## 4       M_weight_ 59.41423 0.3496325
+    ## 5     M_punctual_ 95.39749 0.7069446
+    ## 6     M_durative_ 79.07950 0.2208893
+    ## 7       M_abrupt_ 96.65272 0.7469561
+    ## 8        M_notes_       NA        NA
 
 For Meaning, mean agreement in the original coding is **86%** and the
 lowest Kappa values are for M-durative, M\_weight, and M\_irregular,
@@ -188,3 +175,94 @@ the coding category to reflect the revisions.
 3.  *M\_durative*: coding instructions were sharpened to clarify that
     this targets events, not states and to clarify its relation to
     M\_distribution.
+
+The original coding sheet is available as X and the updated coding sheet
+as X\_version\_2.
+
+## Calibrated coding
+
+After reformulating and revising the coding scheme, we discussed all
+inconsistent cases to reach a consensus and recoded accordingly. Here we
+check whether we now indeed have a canonical, ground truth set of coded
+data.
+
+``` r
+d1 = read_excel("data\\ideophones_coded_MD.xlsx") %>% arrange(filename)
+d2 = read_excel("data\\ideophones_coded_SP.xlsx") %>% arrange(filename)
+d2 <- d2[,-c(1:7)] # remove non-unique fields except filename prior to merge
+
+d <- merge(d1,d2,by="filename")
+
+d.F <- d %>%
+  dplyr::select(c("filename","ideophone","meaning","meaning_NL"),starts_with("F_")) %>%
+  dplyr::select(-starts_with("F_notes"),everything()) # put note fields at end
+
+d.M <- d %>%
+  dplyr::select(c("filename","ideophone","meaning","meaning_NL"),starts_with("M_")) %>%
+  dplyr::select(-starts_with("M_notes"),everything()) # put note fields at end
+
+# get list of coding categories and create dataframes for the consistency values
+F_categories <- get_coding_categories(d.F)
+F_consistency <- as.data.frame(F_categories) %>% dplyr::rename(category = F_categories)
+M_categories <- get_coding_categories(d.M)
+M_consistency <- as.data.frame(M_categories) %>% dplyr::rename(category = M_categories)
+
+F_consistency$agree <- NA
+F_consistency$kappa <- NA
+for (i in 1:(length(F_categories)-1)) { # -1 to exclude the notes column
+  F_consistency$agree[i] <- (get_agree(data=d.F,cat=F_categories[i]))
+  F_consistency$kappa[i] <- (get_kappa(data=d.F,cat=F_categories[i]))
+}
+F_consistency
+```
+
+    ##            category     agree     kappa
+    ## 1          F_redup_  99.58159 0.9897684
+    ## 2   F_monosyllabic_  99.16318 0.9629342
+    ## 3       F_redupmod_ 100.00000 1.0000000
+    ## 4 F_closedsyllable_ 100.00000 1.0000000
+    ## 5   F_vowelquality_  98.74477 0.9803787
+    ## 6          F_voice_ 100.00000 1.0000000
+    ## 7    F_finallength_  98.32636 0.9258800
+    ## 8     F_intonation_ 100.00000 1.0000000
+    ## 9          F_notes_        NA        NA
+
+Hmm, a consistency check at this point shows we’re nearly there but
+we’re not 100% consistent on F\_redup, F\_monosyllabic and
+F\_vowelquality and F\_finallength. We can export only those columns to
+have a quick check.
+
+``` r
+inconsistent <- c('F_redup','F_monosyllabic','F_vowelquality','F_finallength')
+d.F.inconsistent <- d.F %>%
+  dplyr::select(filename,ideophone,meaning,meaning_NL,matches(paste(inconsistent,collapse="|"))) %>%
+  mutate(F_redup_C = ifelse(F_redup_MD == F_redup_SP,1,0),
+         F_monosyllabic_C = ifelse(F_monosyllabic_MD == F_monosyllabic_SP,1,0),
+         F_vowelquality_C = ifelse(F_vowelquality_MD == F_vowelquality_SP,1,0),
+         F_finallength_C = ifelse(F_finallength_MD == F_finallength_SP,1,0)) %>%
+  mutate(check = F_redup_C + F_monosyllabic_C + F_vowelquality_C + F_finallength_C) %>%
+  filter(check < 4)
+d.F.inconsistent <- d.F.inconsistent[, order(names(d.F.inconsistent))]
+
+write_xlsx(d.F.inconsistent,path="data\\ideophones_F_consistency_2ndround.xlsx")
+```
+
+  - Ultimately we want to output a consensus or ground truth file
+    `ideophones_coded.xlsx`, to be used in the next step of the
+    analyses.
+
+<!-- end list -->
+
+``` r
+# for now I'm taking just one coder
+d.coded <- read_excel("data\\ideophones_coded_SP.xlsx") %>% 
+  arrange(filename) %>%
+  dplyr::select(-matches('notes'))
+names(d.coded) <- gsub('_SP','',names(d.coded))
+
+notes <- d %>% dplyr::select(filename,matches('notes'))
+
+d.coded <- left_join(d.coded,notes)
+
+write_xlsx(d.coded,path="data\\ideophones_coded.xlsx")
+```

@@ -8,7 +8,7 @@ editor_options:
 ---
 
 ```{r global_options, include=FALSE}
-knitr::opts_chunk$set(fig.width=8, fig.height=6, fig.path='out/',
+knitr::opts_chunk$set(fig.width=8, fig.height=6, fig.path='figures_md/',
                       echo=TRUE, warning=FALSE, message=FALSE)
 
 ```
@@ -44,24 +44,20 @@ d2 <- d2[,-c(1:7)] # remove non-unique fields except filename prior to merge
 
 d <- merge(d1,d2,by="filename")
 
-# sanity check: are all ideophones in d1 and d2 also in d? (0 = yes)
-d1$filename[d1$filename %notin% d$filename]
-d2$filename[d2$filename %notin% d$filename]
-
 d.F <- d %>%
   dplyr::select(c("filename","ideophone"),starts_with("F_")) %>%
   dplyr::select(-starts_with("F_notes"),everything()) # put note fields at end
-write_xlsx(d.F,path="data\\ideophones_F_consistency.xlsx")
+#write_xlsx(d.F,path="data\\ideophones_F_consistency.xlsx")
 
 d.M <- d %>%
   dplyr::select(c("filename","ideophone"),starts_with("M_")) %>%
   dplyr::select(-starts_with("M_notes"),everything()) # put note fields at end
-write_xlsx(d.M,path="data\\ideophones_M_consistency.xlsx")
+#write_xlsx(d.M,path="data\\ideophones_M_consistency.xlsx")
 
 # function to get the names of coding categories (note: this presupposes there is a coder _MD, change as needed)
 get_coding_categories <- function(data) {
   coder_1_names <- data %>% dplyr::select(ends_with("_MD")) %>% names()
-  gsub('_MD','',coder_1_names)
+  gsub('MD','',coder_1_names)
 }
 
 
@@ -83,7 +79,7 @@ get_kappa <- function(data,cat) {
 }
 
 # sanity check: does the function work? yes
-get_agree(d.F,cat='F_redup')
+get_agree(d.F,cat='F_redup_')
 
 # get list of coding categories and create dataframes for the consistency values
 F_categories <- get_coding_categories(d.F)
@@ -150,12 +146,6 @@ d.M <- d %>%
   dplyr::select(c("filename","ideophone","meaning","meaning_NL"),starts_with("M_")) %>%
   dplyr::select(-starts_with("M_notes"),everything()) # put note fields at end
 
-# function to get the names of coding categories (note: this presupposes there is a coder _MD, change as needed)
-get_coding_categories <- function(data) {
-  coder_1_names <- data %>% dplyr::select(ends_with("_MD")) %>% names()
-  gsub('_MD','',coder_1_names)
-}
-
 # get list of coding categories and create dataframes for the consistency values
 F_categories <- get_coding_categories(d.F)
 F_consistency <- as.data.frame(F_categories) %>% dplyr::rename(category = F_categories)
@@ -169,6 +159,7 @@ for (i in 1:(length(F_categories)-1)) { # -1 to exclude the notes column
   F_consistency$kappa[i] <- (get_kappa(data=d.F,cat=F_categories[i]))
 }
 F_consistency
+
 
 ```
 
@@ -191,7 +182,7 @@ write_xlsx(d.F.inconsistent,path="data\\ideophones_F_consistency_2ndround.xlsx")
 
 ```
 
-Ultimately we want to output a consensus or ground truth file `ideophones_coded.xlsx`, to be used in the next step of the analyses.
+* Ultimately we want to output a consensus or ground truth file `ideophones_coded.xlsx`, to be used in the next step of the analyses.
 
 ```{r write_final}
 
