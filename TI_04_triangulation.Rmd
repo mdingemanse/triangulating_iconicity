@@ -1,0 +1,33 @@
+---
+  title: "Triangulating iconicity: combining coding, guessing and rating measures"
+author: "Mark Dingemanse & Stella Punselie"
+date: "Updated `r format(Sys.Date())`"
+output: github_document
+editor_options: 
+  chunk_output_type: console
+---
+  
+  ```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=8, fig.height=6, fig.path='figures_md/',
+                      echo=TRUE, warning=FALSE, message=FALSE)
+
+```
+
+Code notebook for a study of the relation between linguistically informed iconicity coding and experimentally collected guessability scores.
+
+## Setup
+
+```{r preliminaries, results="hide"}
+# Packages
+list.of.packages <- c("tidyverse","readxl","writexl","ggthemes","viridis")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+lapply(list.of.packages, require, character.only=T)
+
+# useful functions
+`%notin%` <- function(x,y) !(x %in% y) 
+mean.na <- function(x) mean(x, na.rm = T)
+sd.na <- function(x) sd(x, na.rm = T)
+
+```
+
