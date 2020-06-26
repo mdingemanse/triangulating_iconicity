@@ -18,7 +18,7 @@ icoplot <- function(var=NULL,saveplot=FALSE) {
     theme_tufte() + ylim(0,1) + 
     theme(legend.position="none",axis.title.x=element_blank(),plot.margin=margin(0,0,10,0))
   # set colour scheme based on nature of variable
-  if (var %in% c("C_cumulative","C_ternary","language")) {
+  if (var %in% c("C_cumulative","C_ternary","language","C_simple")) {
     p <- p +
       scale_fill_viridis(option="plasma",discrete=T,begin=0.3,end=0.9) +
       scale_colour_viridis(option="plasma",discrete=T,begin=0.3,end=0.9)
