@@ -1,7 +1,7 @@
 Triangulating iconicity: Coding, consistency & calibration
 ================
 Mark Dingemanse & Stella Punselie
-Updated 2020-06-17
+Updated 2020-06-26
 
 ## Coding consistency
 
@@ -172,9 +172,10 @@ the coding category to reflect the revisions.
     essentially means neutral or “not applicable”. It may be advisable
     to further break this up this feature, as there is no guarantee that
     size, weight and brightness pattern similarly across languages.
-3.  *M\_durative*: coding instructions were sharpened to clarify that
-    this targets events, not states and to clarify its relation to
-    M\_distribution.
+3.  *M\_long* was renamed (originally M\_durative): coding instructions
+    were broadened to capture percepts that are long in time and/or
+    space (in line with M\_distribution), and sharpened to clarify that
+    for the temporal dimension it targets only events.
 
 The original coding sheet is available as X and the updated coding sheet
 as X\_version\_2.
