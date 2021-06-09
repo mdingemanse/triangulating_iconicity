@@ -1,0 +1,77 @@
+---
+  title: "Triangulating iconicity: Iconicity ratings"
+author: "Mark Dingemanse & Stella Punselie"
+date: "Updated `r format(Sys.Date())`"
+output: github_document
+editor_options: 
+  chunk_output_type: console
+---
+  
+  ```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=8, fig.height=6, fig.path='figures_md/',
+                      echo=TRUE, warning=FALSE, message=FALSE)
+
+```
+
+Code notebook for a study of the relation between iconicity ratings and experimentally collected guessability scores.
+
+## Setup
+
+```{r preliminaries, results="hide"}
+# Packages
+list.of.packages <- c("tidyverse","readxl","writexl","ggthemes","viridis","gghalves","plotly","lme4","VGAM")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+lapply(list.of.packages, require, character.only=T)
+
+# useful functions
+`%notin%` <- function(x,y) !(x %in% y) 
+mean.na <- function(x) mean(x, na.rm = T)
+sd.na <- function(x) sd(x, na.rm = T)
+
+```
+
+## Data
+Here we load the combined coding and guessability data and then add the rating data.
+
+```{r data}
+# get coded and guessed data from previous step
+d = read.csv("data\\ideophones_coded_guessed.csv")
+
+coding_categories <- d %>% dplyr::select(matches('F_|M_'),-matches('notes|meaning')) %>% names()
+
+# add mean ratings
+d.ratings = read_excel("data\\ideophones_rated_means.xlsx") %>%
+  dplyr::select(-c(item,category,list))
+d <- left_join(d,d.ratings,by=c("filename","language","study"))
+
+# convert ratings to z-scores for comparison with guessability (logodd) scores
+d$rating_z <- scale(d$rating,center=T,scale=T)[,1]
+
+# write file for use in next step
+write.csv(d, file="data\\ideophones_coded_guessed_rated.csv")
+
+
+```
+
+
+
+## Statistics
+```{r stats}
+# before calculating the correlation coefficient, we visualise the correlation between the guessing and rating data
+ggplot(d,aes(x=rating_z,y=logodds)) + 
+  geom_point(colour="dark grey",position="jitter") + 
+  geom_smooth(method=lm,colour="black")
+ggsave("figures\\TI_03_corr.png",height=5,width=7.5)
+
+ggplot(d,aes(x=rating_z,y=logodds)) + 
+  geom_point(aes(color=category,shape=language),position="jitter")
+ggsave("figures\\TI_03_corr_bylanguageandcategory.png",height=5,width=7.5)
+
+# Pearson correlation
+cor.test(d$logodds,d$rating_z,method="pearson")
+
+```
+
+Pearson's correlation coefficient indicates that there is a strong positive correlation between the guessing and rating scores, r(237) = .57, p < .001.
+

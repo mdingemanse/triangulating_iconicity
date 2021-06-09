@@ -19,7 +19,7 @@ Code notebook for a study of the relation between linguistically informed iconic
 
 ```{r preliminaries, results="hide"}
 # Packages
-list.of.packages <- c("tidyverse","readxl","writexl","ggthemes","viridis")
+list.of.packages <- c("tidyverse","readxl","writexl","ggthemes","gghalves","plotly","viridis")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 lapply(list.of.packages, require, character.only=T)
@@ -30,4 +30,91 @@ mean.na <- function(x) mean(x, na.rm = T)
 sd.na <- function(x) sd(x, na.rm = T)
 
 ```
+## Data
+
+```{r data}
+d = read.csv("data\\ideophones_coded_guessed_rated.csv")
+
+coding_categories <- d %>% dplyr::select(matches('F_|M_'),-matches('notes|meaning')) %>% names()
+
+# add cumulative score to allow summing of cumulative, rating, guessability
+d$cumulative_z <- scale(d$C_cumulative,center=T,scale=T)
+d <- d %>%
+  mutate(overallrank = as.numeric(cumulative_z + rating_z + score_z))
+
+d %>% dplyr::select(ideophone,
+                    meaning,
+                    meaning_NL,
+                    category,
+                    language,
+                    study,
+                    score,
+                    rating,
+                    C_cumulative,
+                    overallrank) %>%
+  filter(score > .65,
+         category == "Motion",
+         C_cumulative > 0) %>%
+  dplyr::arrange(-overallrank) %>%
+  View()
+
+# make a copy dp of the data in which we convert some measures to factors for easy plotting & facetting
+tofactors <- paste(c("language|category|study|group",names(d[grep('C_',names(d))])),collapse = "|")
+dp <- d
+dp[,grep(tofactors,names(dp))] <- lapply(dp[,grep(tofactors,names(dp))], as.factor)
+
+
+```
+
+## Visualizations
+Let's have a look at the relations between the coding, guessing and rating data.
+```{r visuals}
+
+ggplot(d,aes(x=rating_z,y=logodds, color=C_cumulative)) +
+  geom_point() +
+  geom_smooth(method=loess,color="black") +
+  scale_fill_viridis(option="plasma",discrete=F,begin=0.3,end=0.9) +
+  scale_colour_viridis(option="plasma",discrete=F,begin=0.3,end=0.9) +
+  NULL
+
+d %>%
+  plot_ly(x = ~rating_z, 
+          y = ~logodds, 
+          z = ~C_cumulative,
+          type="scatter3d",
+          mode="markers",
+          color= ~rating_z,
+          name=~ideophone,
+          showlegend=F) %>%
+  layout(showlegend=F)
+
+
+d %>%
+  plot_ly(x = ~rating_z, 
+          y = ~logodds, 
+          type= "scatter",
+          color= ~rating_z,
+          name=~ideophone,
+          showlegend=F) %>%
+  layout(showlegend=F)
+  
+ggplot(dp, aes(x=C_cumulative,y=rating_z,fill=score_z,color=score_z)) +
+  theme_tufte() +
+  geom_half_boxplot() +
+  geom_half_point() +
+  NULL
+
+
+## look at some data
+
+d %>%
+  filter(rating_z >1,
+         logodds >0.6,
+         C_cumulative >1) %>%
+  View()
+
+
+
+```
+
 

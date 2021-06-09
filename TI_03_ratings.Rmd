@@ -1,5 +1,5 @@
 ---
-  title: "Triangulating iconicity: Iconicity ratings"
+title: "Triangulating iconicity: Iconicity ratings"
 author: "Mark Dingemanse & Stella Punselie"
 date: "Updated `r format(Sys.Date())`"
 output: github_document
@@ -7,7 +7,7 @@ editor_options:
   chunk_output_type: console
 ---
   
-  ```{r global_options, include=FALSE}
+```{r global_options, include=FALSE}
 knitr::opts_chunk$set(fig.width=8, fig.height=6, fig.path='figures_md/',
                       echo=TRUE, warning=FALSE, message=FALSE)
 
@@ -19,7 +19,7 @@ Code notebook for a study of the relation between iconicity ratings and experime
 
 ```{r preliminaries, results="hide"}
 # Packages
-list.of.packages <- c("tidyverse","readxl","writexl","ggthemes","viridis","lme4","VGAM")
+list.of.packages <- c("tidyverse","readxl","writexl","ggthemes","viridis","gghalves","plotly","lme4","VGAM","plyr","emmeans","car")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 lapply(list.of.packages, require, character.only=T)
@@ -31,25 +31,166 @@ sd.na <- function(x) sd(x, na.rm = T)
 
 ```
 
-## Data
+## Rating: descriptives
+
+```{r}
+# load dataframe with all ratings
+read.csv("data\\ideophones_rated_uncorr.csv",header=TRUE,na.strings=c("", "NA"),sep=";",check.names=FALSE) -> d.uncorr
+
+# to long format
+d.uncorr <- gather(d.uncorr, item, rating, 6:245)
+d.uncorr <- d.uncorr[,c(1,6,7)]
+colnames(d.uncorr) <- c("rater","item","rating")
+#remove empty cells
+d.uncorr <- subset(d.uncorr, !is.na(d.uncorr[,"rating"]))
+#change ratings to numeric values with decimals
+as.numeric(sub(",", ".", d.uncorr$rating, fixed = TRUE)) -> d.uncorr$rating
+
+# check for inconsistent raters with person-total correlation based on Motamedi et al. (2019)
+ptc <- d.uncorr[,c("item","rater","rating")]
+personTotalCorrelationCorrected <- function(ptc)
+  {
+  require(tidyverse)
+  ptc %>%
+    dplyr::rename(raterFocal = rater,
+           ratingFocal = rating) %>%
+    full_join(ptc, by='item') %>%
+    filter(rater!=raterFocal) %>%
+    group_by(item, raterFocal, ratingFocal) %>%
+    summarise(ratingsOthers = mean(rating, na.rm=TRUE)) %>%
+    base::split(.$raterFocal) %>%
+    map(~cor(.$ratingFocal, .$ratingsOthers, 
+             use="pairwise.complete.obs")) %>%
+    as.data.frame %>%
+    gather %>%
+    dplyr::rename(rater = key, perTotCor = value)
+}
+View(personTotalCorrelationCorrected(ptc))
+
+#plot person-total correlations
+ptc %>%
+select(item, rater, rating) %>%
+personTotalCorrelationCorrected %>%
+ggplot(aes(x=perTotCor)) + 
+  geom_density() + 
+  geom_histogram(stat="bin", 
+                 alpha=0.4,
+                 aes(y=..density..),
+                 binwidth=0.1) +
+  labs(x="Person-total correlation")
+ggsave("figures\\rating_PerTotCorr.png",height=5,width=7.5)
+```
+
+One participant (N045) showed a negative person-total correlation, which according to Curran (2016) indicates a careless responder rendering invalid data. Inspection of this participant’s data showed they had indeed given the same answer to every question. I therefore decided to remove this participant from the dataset.
+
+Two other participatns (N022 and N034) also had to be removed because of their knowledge of Japanese and Korean, resulting in a total of 75 participants to be included in the analysis.
+
+```{r}
+# load corrected data
+d <- read_xlsx("data\\ideophones_rated.xlsx")
+d.means <- read_xlsx("data\\ideophones_rated_means.xlsx")
+
+# get means and standard deviations across all ideophones and for each language and category
+mean(d$rating)
+  # 2.948339
+sd(d$rating)
+  # 1.297106
+sumcat <- ddply(d,~category,summarise,mean=mean(rating),sd=sd(rating))
+sumlang <- ddply(d,~language,summarise,mean=mean(rating),sd=sd(rating))
+
+```
+
+Because the category "Other" is quite a vague residual category with only 17 items (as opposed to 30-40 items for the other categories), I decided to remove this category for now. I will keep a copy that includes the ratings for "Other".
+
+```{r}
+#create copy of data including the category "Other"
+d.other <- read_xlsx("data\\ideophones_rated.xlsx")
+d.m.other <- read_xlsx("data\\ideophones_rated_means.xlsx")
+
+#remove category "Other" from d and d.means
+d <- d[!grepl("Other",d$category),]
+d.means <- d.means[!grepl("Other",d.means$category),]
+
+# make new summary for language (without the Japanese "other" ideophones)
+sumlang2 <- ddply(d,~language,summarise,mean=mean(rating),sd=sd(rating))
+```
+
+Here we plot the distribution of the rating data.
+
+```{r}
+#convert some columns to factors
+cols <- c("category","language","study")
+d[cols] <- lapply(d[cols], factor)
+d.means[cols] <- lapply(d.means[cols], factor)
+
+#combined boxplot and scatterplot by category
+ggplot(d.means, aes(x=reorder(category,-rating),y=rating,color=category)) +
+  theme_tufte(base_size=16) +
+  geom_half_boxplot(aes(middle=mean(rating)),show.legend=F) +
+  geom_half_point(show.legend=F) +
+  scale_colour_viridis_d(option="D",alpha=0.8) +
+  xlab("category") + scale_x_discrete(labels = c("Sound","Motion","Shape", 
+  "Texture","Colour/Visual"))
+ggsave("figures\\rating_category.png",height=5,width=7.5)
+
+#same, but by language
+ggplot(d.means, aes(x=reorder(language,-rating),y=rating,color=language)) +
+  theme_tufte(base_size=16) +
+  geom_half_boxplot(aes(middle=mean(rating)),show.legend=F) +
+  geom_half_point(show.legend=F) +
+  scale_colour_viridis_d(option="D",alpha=0.8) +
+  xlab("category")
+ggsave("figures\\rating_language.png",height=5,width=7.5)
+
+```
+
+## Statistics
+
+Now we want to see which categories and languages differ significantly from the others in their iconicity ratings.
+
+First, we check the assumptions.
+
+```{r}
+# check normality by visual inspection
+ggqqplot(d, "rating", facet.by = "category")
+  # all points fall approximately along the reference line, so normality can be assumed
+
+# check homogeneity of variance with Levene's test
+leveneTest(rating~category,data=d)
+leveneTest(rating~language,data=d)
+  # both are not significant (> .05), so homogeneity of variance can be assumed
+```
+
+Now we construct a linear model with category as a predictor of the iconicity ratings.
+
+```{r}
+summary(lm.cat <- lm(rating ~ category, d))
+
+# pairwise comparisons with Tukey adjustments in the emmeans package
+emm.cat <- emmeans(lm.cat, "category")
+pairs(emm.cat)
+pwpm(emm.cat)
+```
+
+And here we do the same with language as predictor.
+
+```{r}
+summary(lm.lang <- lm(rating ~ language, d))
+
+# pairwise comparisons in emmeans package
+emm.lang <- emmeans(lm.lang, "language")
+pairs(emm.lang)
+pwpm(emm.lang)
+```
+
+## Combined data
 Here we load the combined coding and guessability data and then add the rating data.
 
-```{r data}
-# get coding data
-d = read_excel("data\\ideophones_coded.xlsx") %>% arrange(filename)
+```{r}
+# get coded and guessed data from previous step (TI_02_congruence)
+d = read.csv("data\\ideophones_coded_guessed.csv")
 
-coding_categories <- d %>% dplyr::select(matches('_'),-matches('notes|meaning')) %>% names()
-
-# add guessability scores from the Collabra and Language studies.
-
-d.scores = read_excel("data\\ideophones_guessability.xlsx") %>%
-  dplyr::select(-category)
-d <- left_join(d,d.scores,by=c("ideophone","language","study" = "paper"))
-
-# add logodds (for when we run stats: it's more sensible to predict against logodds than raw proportion correct)
-d <- d %>%
-  group_by(study) %>%
-  mutate(logodds = probitlink(score))
+coding_categories <- d %>% dplyr::select(matches('F_|M_'),-matches('notes|meaning')) %>% names()
 
 # add mean ratings
 d.ratings = read_excel("data\\ideophones_rated_means.xlsx") %>%
@@ -59,21 +200,62 @@ d <- left_join(d,d.ratings,by=c("filename","language","study"))
 # convert ratings to z-scores for comparison with guessability (logodd) scores
 d$rating_z <- scale(d$rating,center=T,scale=T)
 
+#remove category "Other"
+d <- d[!grepl("Other",d$category),]
+
 ```
+
+## Visualisations
+Let's first visualise the relation between the rating and guessing data.
+
+```{r}
+ggplot(d,aes(x=rating_z,y=score_z)) +   
+  geom_point(aes(colour=study),position="jitter") +
+  geom_smooth(method=lm,colour="black") +
+  theme_tufte(base_size = 16) +
+  xlab("rating") + ylab("guessability")
+ggsave("figures\\rating_guessing_corr.png",height=5,width=7.5)
+
+ggplot(d,aes(x=rating_z,y=score_z)) +   
+  geom_point(aes(colour=category,shape=study),position="jitter") +
+  geom_smooth(method=loess,colour="black") +
+  theme_tufte(base_size = 16) +
+  xlab("rating") + ylab("guessability")
+```
+
+There appears to be a positive correlation between the rating and guessing data.
+
+Now let's visualise the relations between the coding, guessing and rating data.
+
+```{r}
+
+ggplot(d,aes(x=rating_z,y=logodds, color=C_cumulative)) +
+  geom_point() +
+  geom_smooth(method=loess) +
+  scale_fill_viridis(option="plasma",discrete=F,begin=0.3,end=0.9) +
+  scale_colour_viridis(option="plasma",discrete=F,begin=0.3,end=0.9) +
+  NULL
+
+plot_ly(data=d,x=rating_z,y=score_z,color=C_simple)
+
+
+```
+
 
 ## Statistics
-```{r stats}
-# before calculating the correlation coefficient, we visualise the correlation between the guessing and rating data
-ggplot(d,aes(x=rating_z,y=logodds)) + geom_point(colour="dark grey",position="jitter") + geom_smooth(method=lm,colour="black")
-ggsave("figures\\TI_03_corr.png",height=5,width=7.5)
-
-ggplot(d,aes(x=rating_z,y=logodds)) + geom_point(aes(color=category,shape=language),position="jitter")
-ggsave("figures\\TI_03_corr_bylanguageandcategory.png",height=5,width=7.5)
-
+```{r}
 # Pearson correlation
-cor.test(d$logodds,d$rating_z,method="pearson")
-
+cor.test(d$score_z,d$rating_z,method="pearson")
+cor.rank <- cor.test(d$score_z,d$C_cumulative,method="spearman")
 ```
 
-Pearson's correlation coefficient indicates that there is a strong positive correlation between the guessing and rating scores, r(237) = .57, p < .001.
+Pearson's correlation coefficient indicates that there is indeed a strong positive correlation between the guessing and rating data, r(220) = .61, p < .001.
+
+```{r}
+#check where the guessing and rating data deviate
+d %>%
+  filter(rating_z-score_z > 2 | rating_z-score_z < -2)%>%
+  dplyr::select(filename,ideophone,rating,rating_z,language,logodds,score,score_z) %>%
+  arrange(score) %>% ungroup()
+```
 

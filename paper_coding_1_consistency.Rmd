@@ -165,7 +165,7 @@ F_consistency
 
 ```
 
-Hmm, a consistency check at this point shows we're nearly there but we're not 100% consistent on F_redup, F_monosyllabic and F_vowelquality and F_finallength. We can export only those columns to have a quick check.
+A consistency check at this point shows we're nearly there but we're not 100% consistent on F_redup, F_monosyllabic and F_vowelquality and F_finallength. We can export only those columns to have a quick check. However, as we do not aim for 100% consistency, this is more for informative purposes.
 
 ```{r inconsistency_output}
 
@@ -184,11 +184,11 @@ write_xlsx(d.F.inconsistent,path="data\\ideophones_F_consistency_2ndround.xlsx")
 
 ```
 
-* Ultimately we want to output a consensus or ground truth file `ideophones_coded.xlsx`, to be used in the next step of the analyses.
+### Consensus version
+The final result of the coding consistency is a consensus or ground truth file `ideophones_coded.xlsx`, to be used in the next step of the analyses. We do this this by taking the (calibrated and revised) data from one coder.
 
-```{r write_final}
+```{r create_consensus_version}
 
-# for now I'm taking just one coder
 d.coded <- read_excel("data\\ideophones_coded_SP.xlsx") %>% 
   arrange(filename) %>%
   dplyr::select(-matches('notes'))
@@ -198,6 +198,91 @@ notes <- d %>% dplyr::select(filename,matches('notes'))
 
 d.coded <- left_join(d.coded,notes)
 
-write_xlsx(d.coded,path="data\\ideophones_coded.xlsx")
+```
+
+## Adding congruency measures
+We add congruency measures by combining F and M features as described in the coding scheme.
+
+```{r congruency_1}
+
+# note that we overwrite the old d with the new consensus version here
+
+# using ifelse() statements that essentially say, if these conditions are true, use 1, otherwise 0
+d <- d.coded %>%
+  mutate(C_modality = ifelse(M_sound == 1,1,0),
+         C_iterative = ifelse(F_redup == 1 & M_distribution == 1,1,0),
+         C_irregular = ifelse(F_redupmod == 1 & M_irregular == 1,1,0),
+         C_closure = ifelse(F_closedsyllable == 1 & M_abrupt == 1,1,0),
+         C_punctual = ifelse(F_monosyllabic == 1 & M_punctual == 1,1,0),
+         C_long = ifelse(F_finallength == 1 & M_long == 1,1,0),
+         C_weight_voice = ifelse((F_voice == 0 & M_weight == 0) | (F_voice == 2 & M_weight == 2),1,0),
+         C_weight_vowel = ifelse((F_vowelquality == 0 & M_weight == 0) | (F_vowelquality == 2 & M_weight == 2),1,0),
+         C_weight_tone = ifelse((F_intonation == 0 & M_weight == 2) | (F_intonation == 2 & M_weight == 0),1,0)
+         )
+
+# some mappings are mutually exclusive, so we combine them
+
+#sanity check: are they indeed mutually exclusive? these calls should come up empty
+d %>% 
+  mutate(C_aspect = C_iterative + C_punctual) %>%
+  dplyr::select(ideophone,meaning_NL,language,C_iterative,C_punctual,C_aspect) %>%
+  filter(C_aspect > 1)
+d %>%
+  mutate(C_length = C_long + C_closure) %>%
+  dplyr::select(ideophone,meaning_NL,language,C_iterative,C_closure,C_length) %>%
+  filter(C_length > 1)
+
+d <- d %>%
+  mutate(C_aspect = C_iterative + C_punctual,
+         C_length = C_long + C_closure)
+
+
+# C_weight_ subfeatures are linked to one and the same meaning feature M_weight so they are recombined into C_magnitude
+# (note: this may be subject to revision, as the subfeatures may not deserve equal weight)
+
+d <- d %>%
+  mutate(C_weight = C_weight_voice + C_weight_vowel + C_weight_tone,
+         C_magnitude = ifelse(C_weight == 0,0,1)) # i.e. a magnitude value that is 1 if any weight feature was congruent
+
+
+# add cumulative iconicity scores (and some others)
+# any1 = 1 if an ideophone has at least 1 congruency feature of any type
+# atleast2 = if an ideophone has at least 2 congruency features of any type
+# ternary = simple way of conflating the (smaller) upper regions: 1=1, 2=2, >2 = 3
+d <- d %>%
+  mutate(C_cumulative = C_modality + C_aspect + C_length + C_irregular + C_magnitude) %>%
+  mutate(C_any1 = ifelse(C_cumulative == 0,0,1),
+         C_atleast2 = ifelse(C_cumulative > 1,1,0),
+         C_ternary = ifelse(C_cumulative == 0,0,
+                            ifelse(C_cumulative == 1,1,
+                                   ifelse(C_cumulative == 2,2,3)))) # i.e. 1, 2 or 3
+
+
+# we can have a first look at the basic distribution of guessability by iconicity
+d %>%
+  group_by(C_cumulative) %>%
+  summarise(n=n(),score=mean.na(score))
+
+d %>%
+  group_by(C_any1) %>%
+  summarise(n=n(),score=mean.na(score))
+
+d %>%
+  group_by(C_atleast2) %>%
+  summarise(n=n(),score=mean.na(score))
+
+d %>%
+  group_by(C_ternary) %>%
+  summarise(n=n(),score=mean.na(score))
+
+d %>%
+  group_by(C_simple) %>%
+  summarise(n=n(),score=mean.na(score))
+
+
+
+# finally write this to XLS and CSV
+write_xlsx(d,path="data\\ideophones_coded.xlsx")
+write.csv(d,file="data\\ideophones_coded.csv")
 
 ```
