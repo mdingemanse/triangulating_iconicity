@@ -38,11 +38,17 @@ d <- left_join(d,d.ratings,by=c("filename","study","language"))
 d$rating_z <- scale(d$rating,center=T,scale=T)
 
 d%>%
-  mutate(label=paste(ideophone,paste("'",meaning,"'",sep=""),language))->dat
-  
+  pivot_longer(C_modality:C_magnitude,names_to="correlate",values_to="present")%>%
+  filter(present!=0)%>%
+  mutate(features="features")%>%
+  group_by(ideophone)%>%
+  pivot_wider(names_from="features",values_from="correlate",values_fn=list)%>%
+  mutate(label=paste(ideophone,meaning,features,sep="\n"))->dat
+
 # Define UI for app
 ui <- fluidPage(
   titlePanel("Triangulating iconicity"),
+  fluidRow(includeHTML("test.html")),
   sidebarLayout(
     
     # Sidebar panel for inputs ----
@@ -79,7 +85,6 @@ server <- function(input, output) {
       filter(language %in% langs)%>%
       filter(category %in% semdoms)->filtered_dat
     
-    print(input$labelpoints)
     if(input$pointlabels==TRUE){
     filtered_dat%>%
       ggplot(aes(x=rating_z,y=logodds,colour=C_cumulative,label=label))+geom_point()+scale_fill_viridis(option="plasma") +
