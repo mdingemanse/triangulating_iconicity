@@ -243,9 +243,6 @@ ggplot(d,aes(x=rating_z,y=logodds, color=C_cumulative)) +
   scale_colour_viridis(option="plasma",discrete=F,begin=0.3,end=0.9) +
   NULL
 
-#plot_ly(data=d,x=rating_z,y=score_z,color=C_simple)
-
-
 ```
 
 
