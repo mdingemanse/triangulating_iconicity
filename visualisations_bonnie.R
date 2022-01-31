@@ -38,7 +38,8 @@ d <- left_join(d,d.ratings,by=c("filename","study","language"))
 d$rating_z <- scale(d$rating,center=T,scale=T)
 
 d%>%
-  pivot_longer(C_modality:C_magnitude,names_to="correlate",values_to="present")%>%
+  select(-C_length,-C_aspect,-C_magnitude,-C_weight)%>%
+  pivot_longer(C_modality:C_weight_tone,names_to="correlate",values_to="present")%>%
   filter(present!=0)%>%
   mutate(features="features")%>%
   group_by(ideophone)%>%
