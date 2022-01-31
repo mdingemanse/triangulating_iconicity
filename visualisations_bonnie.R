@@ -48,7 +48,7 @@ d%>%
 # Define UI for app
 ui <- fluidPage(
   titlePanel("Triangulating iconicity"),
-  fluidRow(includeHTML("test.html")),
+  fluidRow(includeHTML("codingscheme.html")),
   sidebarLayout(
     
     # Sidebar panel for inputs ----
