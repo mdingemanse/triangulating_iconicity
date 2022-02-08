@@ -50,7 +50,6 @@ dat%>%
 
 interesting <- c("berabera","gblogblogblo","choki choki","boo boo","gokugoku","kpa","tòlontòlontòlon",
                  "kpótókpótó","gbóvúú","gayagaya")
-
 dat%>%
   mutate(interest=ifelse(ideophone %in% interesting,ideophone,NA))->dat
 

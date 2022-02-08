@@ -51,8 +51,6 @@ d%>%
 # Define UI for app
 ui <- fluidPage(
   titlePanel("Triangulating iconicity"),
-  h4("Coding scheme"),
-  fluidRow(includeHTML("codingscheme.html")),
   sidebarLayout(
     
     # Sidebar panel for inputs ----
@@ -68,8 +66,9 @@ ui <- fluidPage(
       plotlyOutput(outputId = "plot"),
       p("The size of the dots corresponds to cumulative iconicity")
       
-    )
-  )
+    ),
+  ),
+  fluidRow(includeHTML("codingscheme.html"))
 )
 
 server <- function(input, output) {
