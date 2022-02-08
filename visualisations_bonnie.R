@@ -5,17 +5,19 @@ library(shiny)
 library(readxl)
 library(VGAM)
 library(viridis)
+library(RColorBrewer)
 
 #### For some reason writing the d dataset from paper_coding_2_analysis.Rmd
-#### to utf-8 and then reading it in here as a utf-8 file didn't work :(
+#### to a utf-8 encoded csv file and then reading it in here as a utf-8 file
+###  didn't read the characters correctly :(
 
 #### So I just make it again here because that works
 # get consensus coding data
-d = read_excel("data\\ideophones_coded.xlsx") %>% arrange(filename)
+d = read_excel("shinydat\\ideophones_coded.xlsx") %>% arrange(filename)
 
 # add guessability scores from the Collabra and Language studies.
 
-d.scores = read_excel("data\\ideophones_guessability.xlsx") %>%
+d.scores = read_excel("shinydat\\ideophones_guessability.xlsx") %>%
   dplyr::select(-category)
 d <- left_join(d,d.scores,by=c("ideophone","language","study" = "paper"))
 
@@ -30,7 +32,7 @@ d <- d %>%
   mutate(score_z = scale(score,center=T,scale=T))
 
 # get ratings data
-d.ratings <- read_xlsx("data\\ideophones_rated_means.xlsx") %>%
+d.ratings <- read_xlsx("shinydat\\ideophones_rated_means.xlsx") %>%
   dplyr::select(-category,-list,-item)
 d <- left_join(d,d.ratings,by=c("filename","study","language"))
 
@@ -49,6 +51,7 @@ d%>%
 # Define UI for app
 ui <- fluidPage(
   titlePanel("Triangulating iconicity"),
+  h4("Coding scheme"),
   fluidRow(includeHTML("codingscheme.html")),
   sidebarLayout(
     
@@ -58,12 +61,12 @@ ui <- fluidPage(
       selectInput("lang","Choose a language",c("All languages",dat$language)),
       selectInput("study","Choose a study",c("Both studies",dat$study)),
       checkboxInput("pointlabels","Label points",FALSE)),
-      
     
     # Main panel for displaying outputs ----
     mainPanel(
       
-      plotlyOutput(outputId = "plot")
+      plotlyOutput(outputId = "plot"),
+      p("The size of the dots corresponds to cumulative iconicity")
       
     )
   )
@@ -87,16 +90,43 @@ server <- function(input, output) {
       filter(category %in% semdoms)->filtered_dat
     
     if(input$pointlabels==TRUE){
-    filtered_dat%>%
-      ggplot(aes(x=rating_z,y=logodds,colour=C_cumulative,label=label))+geom_point()+scale_fill_viridis(option="plasma") +
-      scale_colour_viridis(option="plasma")+theme_tufte()+geom_text(data=filtered_dat,aes(x=rating_z,y=logodds,colour=C_cumulative,label=ideophone))->plot
-    }
-    else{
+    # plots with labels
+    if(input$semdom!="All domains"){
+      # plots for a single domain, with labels
       filtered_dat%>%
-        ggplot(aes(x=rating_z,y=logodds,colour=C_cumulative,label=label))+geom_point()+scale_fill_viridis(option="plasma") +
-        scale_colour_viridis(option="plasma")+theme_tufte()->plot
+        ggplot(aes(x=rating_z,y=logodds,size=C_cumulative,label=label,color=C_cumulative))+
+        geom_point()+scale_fill_viridis(option="plasma")+scale_colour_viridis(option="plasma")+
+        theme_tufte()+labs(x="rating (z)",y="guessability (log odds)",size="Cumulative iconicity")+
+        xlim(-2,2)+ylim(-1,1)+
+        geom_text(data=filtered_dat,aes(x=rating_z,y=logodds,label=ideophone),size=4)->plot
+    }else{
+      # plot for all domains, with labels
+      filtered_dat%>%
+        ggplot(aes(x=rating_z,y=logodds,size=C_cumulative,label=label,color=category))+
+        geom_point()+theme_dark()+scale_color_brewer(palette = "Accent")+
+        labs(x="rating (z)",y="guessability (log odds)",size="Cumulative iconicity")+
+        xlim(-2,2)+ylim(-1,1)+
+        geom_text(data=filtered_dat,aes(x=rating_z,y=logodds,label=ideophone),size=4)->plot
     }
       
+    }else{
+    # plots without labels
+      if(input$semdom!="All domains"){
+        # plots for a single domain, without labels
+        filtered_dat%>%
+          ggplot(aes(x=rating_z,y=logodds,size=C_cumulative,label=label,color=C_cumulative))+
+          geom_point()+scale_fill_viridis(option="plasma")+scale_colour_viridis(option="plasma")+
+          theme_tufte()+labs(x="rating (z)",y="guessability (log odds)",size="Cumulative iconicity")+
+          xlim(-2,2)+ylim(-1,1)->plot
+      }else{
+        # plot for all domains, without labels
+        filtered_dat%>%
+          ggplot(aes(x=rating_z,y=logodds,size=C_cumulative,label=label,color=category))+
+          geom_point()+theme_dark()+scale_color_brewer(palette = "Accent")+
+          labs(x="rating (z)",y="guessability (log odds)",size="Cumulative iconicity")+
+          xlim(-2,2)+ylim(-1,1)->plot
+      } 
+    }
       ggplotly(plot)
     
   })
