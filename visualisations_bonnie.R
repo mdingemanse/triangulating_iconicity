@@ -94,10 +94,13 @@ server <- function(input, output) {
       # plots for a single domain, with labels
       filtered_dat%>%
         ggplot(aes(x=rating_z,y=logodds,size=C_cumulative,label=label,color=C_cumulative))+
-        geom_point()+scale_fill_viridis(option="plasma")+scale_colour_viridis(option="plasma")+
+        geom_point()+
         theme_tufte()+labs(x="rating (z)",y="guessability (log odds)",size="Cumulative iconicity")+
         xlim(min(dat$rating_z)-0.2,max(dat$rating_z)+0.2)+ylim(min(dat$logodds)-0.2,max(dat$logodds)+0.2)+
-        geom_text(data=filtered_dat,aes(x=rating_z,y=logodds,label=ideophone),size=4)->plot
+        geom_text(data=filtered_dat,aes(x=rating_z,y=logodds,label=ideophone),size=4)+
+        scale_fill_viridis(option="plasma",limits=c(1, 4), breaks=seq(1, 4, by=1))+
+        scale_colour_viridis(option="plasma",limits=c(1, 4), breaks=seq(1, 4, by=1))->plot
+      
     }else{
       # plot for all domains, with labels
       filtered_dat%>%
@@ -114,9 +117,11 @@ server <- function(input, output) {
         # plots for a single domain, without labels
         filtered_dat%>%
           ggplot(aes(x=rating_z,y=logodds,size=C_cumulative,label=label,color=C_cumulative))+
-          geom_point()+scale_fill_viridis(option="plasma")+scale_colour_viridis(option="plasma")+
+          geom_point()+
           theme_tufte()+labs(x="rating (z)",y="guessability (log odds)",size="Cumulative iconicity")+
-          xlim(min(dat$rating_z)-0.2,max(dat$rating_z)+0.2)+ylim(min(dat$logodds)-0.2,max(dat$logodds)+0.2)->plot
+          xlim(min(dat$rating_z)-0.2,max(dat$rating_z)+0.2)+ylim(min(dat$logodds)-0.2,max(dat$logodds)+0.2)+
+          scale_fill_viridis(option="plasma",limits=c(1, 4), breaks=seq(1, 4, by=1))+
+          scale_colour_viridis(option="plasma",limits=c(1, 4), breaks=seq(1, 4, by=1))->plot
       }else{
         # plot for all domains, without labels
         filtered_dat%>%
