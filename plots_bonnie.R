@@ -1,3 +1,5 @@
+library(ggrepel)
+library(tidyverse)
 #### For some reason writing the d dataset from paper_coding_2_analysis.Rmd
 #### to utf-8 and then reading it in here as a utf-8 file didn't work :(
 
@@ -44,7 +46,19 @@ dat%>%
   labs(x="rating (z)",y="guessability (log odds)",size="Cumulative iconicity")+
   facet_wrap(~category)+theme_tufte()
 
+# Add info on ideophones of note here
+
+interesting <- c("berabera","gblogblogblo","choki choki","boo boo")
+
+dat%>%
+  mutate(interest=ifelse(ideophone %in% interesting,ideophone,NA))->dat
 
 dat%>%
   filter(category=="Sound")%>%
-  ggplot(aes(x=rating_z,y=logodds,size=C_cumulative,color=C_cumulative))+geom_point()+scale_fill_viridis(option="plasma")+scale_colour_viridis(option="plasma")+theme_tufte()+ scale_size_continuous(limits=c(1, 4), breaks=seq(1, 4, by=1))+guides(color= guide_legend(), size=guide_legend())+labs(x="rating (z)",y="guessability (log odds)",size="Cumulative iconicity",color="Cumulative iconicity")
+  ggplot(aes(x=rating_z,y=logodds,size=C_cumulative,color=C_cumulative,label=interest))+
+  geom_point()+scale_fill_viridis(option="plasma")+
+  scale_colour_viridis(option="plasma")+theme_tufte()+
+  scale_size_continuous(limits=c(1, 4), breaks=seq(1, 4, by=1))+
+  guides(color= guide_legend(), size=guide_legend())+
+  labs(x="rating (z)",y="guessability (log odds)",size="Cumulative iconicity",color="Cumulative iconicity")+
+  geom_text_repel(size=4)

@@ -97,7 +97,7 @@ server <- function(input, output) {
         ggplot(aes(x=rating_z,y=logodds,size=C_cumulative,label=label,color=C_cumulative))+
         geom_point()+scale_fill_viridis(option="plasma")+scale_colour_viridis(option="plasma")+
         theme_tufte()+labs(x="rating (z)",y="guessability (log odds)",size="Cumulative iconicity")+
-        xlim(-2,2)+ylim(-1,1)+
+        xlim(min(dat$rating_z)-0.2,max(dat$rating_z)+0.2)+ylim(min(dat$logodds)-0.2,max(dat$logodds)+0.2)+
         geom_text(data=filtered_dat,aes(x=rating_z,y=logodds,label=ideophone),size=4)->plot
     }else{
       # plot for all domains, with labels
@@ -105,7 +105,7 @@ server <- function(input, output) {
         ggplot(aes(x=rating_z,y=logodds,size=C_cumulative,label=label,color=category))+
         geom_point()+theme_dark()+scale_color_brewer(palette = "Accent")+
         labs(x="rating (z)",y="guessability (log odds)",size="Cumulative iconicity")+
-        xlim(-2,2)+ylim(-1,1)+
+        xlim(min(dat$rating_z)-0.2,max(dat$rating_z)+0.2)+ylim(min(dat$logodds)-0.2,max(dat$logodds)+0.2)+
         geom_text(data=filtered_dat,aes(x=rating_z,y=logodds,label=ideophone),size=4)->plot
     }
       
@@ -117,14 +117,14 @@ server <- function(input, output) {
           ggplot(aes(x=rating_z,y=logodds,size=C_cumulative,label=label,color=C_cumulative))+
           geom_point()+scale_fill_viridis(option="plasma")+scale_colour_viridis(option="plasma")+
           theme_tufte()+labs(x="rating (z)",y="guessability (log odds)",size="Cumulative iconicity")+
-          xlim(-2,2)+ylim(-1,1)->plot
+          xlim(min(dat$rating_z)-0.2,max(dat$rating_z)+0.2)+ylim(min(dat$logodds)-0.2,max(dat$logodds)+0.2)->plot
       }else{
         # plot for all domains, without labels
         filtered_dat%>%
           ggplot(aes(x=rating_z,y=logodds,size=C_cumulative,label=label,color=category))+
           geom_point()+theme_dark()+scale_color_brewer(palette = "Accent")+
           labs(x="rating (z)",y="guessability (log odds)",size="Cumulative iconicity")+
-          xlim(-2,2)+ylim(-1,1)->plot
+          xlim(min(dat$rating_z)-0.2,max(dat$rating_z)+0.2)+ylim(min(dat$logodds)-0.2,max(dat$logodds)+0.2)->plot
       } 
     }
       ggplotly(plot)
