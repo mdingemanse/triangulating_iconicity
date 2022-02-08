@@ -49,15 +49,30 @@ dat%>%
 # Add info on ideophones of note here
 
 interesting <- c("berabera","gblogblogblo","choki choki","boo boo","gokugoku","kpa","tòlontòlontòlon",
-                 "kpótókpótó","gbóvúú","gayagaya")
+                 "kpótókpótó","gbóvúú",
+                 "slʔẽẽk",
+                 "gayagaya","blʔoo::k","slʔẽẽk","giarigiari")
+
+interesting_meaning <- c("lighter brown, pale-coloured")
+                 
 dat%>%
-  mutate(interest=ifelse(ideophone %in% interesting,ideophone,NA))->dat
+  mutate(interest=ifelse(ideophone %in% interesting|meaning %in% interesting_meaning,ideophone,NA))->dat
 
 dat%>%
   filter(category=="Sound")%>%
   ggplot(aes(x=rating_z,y=logodds,size=C_cumulative,color=C_cumulative,label=interest))+
   geom_point()+scale_fill_viridis(option="plasma")+
   scale_colour_viridis(option="plasma")+theme_tufte()+
+  scale_size_continuous(limits=c(1, 4), breaks=seq(1, 4, by=1))+
+  guides(color= guide_legend(), size=guide_legend())+
+  labs(x="rating (z)",y="guessability (log odds)",size="Cumulative iconicity",color="Cumulative iconicity")+
+  geom_text_repel(size=4)
+
+dat%>%
+  filter(category=="ColorVisual")%>%
+  ggplot(aes(x=rating_z,y=logodds,size=C_cumulative,color=C_cumulative,label=interest))+
+  geom_point()+scale_fill_viridis(option="plasma")+
+  scale_colour_viridis(option="plasma",limits=c(1, 4), breaks=seq(1, 4, by=1))+theme_tufte()+
   scale_size_continuous(limits=c(1, 4), breaks=seq(1, 4, by=1))+
   guides(color= guide_legend(), size=guide_legend())+
   labs(x="rating (z)",y="guessability (log odds)",size="Cumulative iconicity",color="Cumulative iconicity")+
