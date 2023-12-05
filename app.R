@@ -2,22 +2,22 @@ library(tidyverse)
 library(plotly)
 library(ggthemes)
 library(shiny)
-library(readxl)
+#library(readxl)
 library(VGAM)
 library(viridis)
 library(RColorBrewer)
 
-#### For some reason writing the d dataset from paper_coding_2_analysis.Rmd
-#### to a utf-8 encoded csv file and then reading it in here as a utf-8 file
-###  didn't read the characters correctly :(
+#### When I run this on my windows computer, I need to use shinday\\file.tsv instead 
+### of just regular slashes because windows is stupid. But for deploying to shiny
+### make sure you change the \\ to a / first or it won't work.
 
 #### So I just make it again here because that works
 # get consensus coding data
-d = read_excel("shinydat\\ideophones_coded.xlsx") %>% arrange(filename)
+d = read_tsv("shinydat/ideophones_coded.tsv")%>% arrange(filename)
 
 # add guessability scores from the Collabra and Language studies.
 
-d.scores = read_excel("shinydat\\ideophones_guessability.xlsx") %>%
+d.scores = read_tsv("shinydat/ideophones_guessability.tsv") %>%
   dplyr::select(-category)
 d <- left_join(d,d.scores,by=c("ideophone","language","study" = "paper"))
 
@@ -32,7 +32,7 @@ d <- d %>%
   mutate(score_z = scale(score,center=T,scale=T))
 
 # get ratings data
-d.ratings <- read_xlsx("shinydat\\ideophones_rated_means.xlsx") %>%
+d.ratings <- read_tsv("shinydat/ideophones_rated_means.tsv")%>%
   dplyr::select(-category,-list,-item)
 d <- left_join(d,d.ratings,by=c("filename","study","language"))
 
@@ -47,6 +47,18 @@ d%>%
   group_by(ideophone)%>%
   pivot_wider(names_from="features",values_from="correlate",values_fn=list)%>%
   mutate(label=paste(ideophone,meaning,features,sep="\n"))->dat
+
+# ## Bonnie analysis
+# sound <- dat%>%filter(category=="Sound")  # cor is 0.736
+# motion <- dat%>%filter(category=="Motion")  # cor is 0.659
+# shape <- dat%>%filter(category=="Shape")  # cor is 0.644
+# texture <- dat%>%filter(category=="Texture")  # cor is 0.38
+# colour <- dat%>%filter(category=="ColorVisual"|category=="Other") # cor is 0.34
+# 
+# dat$category <- as.factor(dat$category)
+# levels(dat$category) <- c("Sound","Motion","Shape","Texture","ColorVisual","Other")
+# dat%>%
+#   ggplot(aes(x=category,y=logodds))+geom_boxplot()
 
 # Define UI for app
 ui <- fluidPage(
