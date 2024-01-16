@@ -93,10 +93,16 @@ The overview panel is created separately but we use the data from the guessabili
 
 ```{r figures_paper_guessability_canvas}
 
+# make a copy dp of the data in which we convert some measures to factors for easy plotting & facetting
+tofactors <- paste(c("language|category|study|group",names(d[grep('C_',names(d))])),collapse = "|")
+dp <- d
+dp[,grep(tofactors,names(dp))] <- lapply(dp[,grep(tofactors,names(dp))], as.factor)
+
+
 # blank plot can be useful as a canvas 
 ggplot(data=dp, aes(x=study,y=score)) +
   theme_tufte() + ylim(0,1) + theme(legend.position="none",axis.title.x=element_blank(),plot.margin=margin(0,0,10,0)) + 
-  stat_summary(fun.y=median,geom="point",size=8,shape=21,stroke=1,fill="white",colour="#c9c9c9") +
+  stat_summary(fun=median,geom="point",size=8,shape=21,stroke=1,fill="white",colour="#c9c9c9") +
   geom_dotplot(colour="white",fill="black",stackgroups=T,dotsize=1.5,binwidth=0.01,binaxis="y",stackdir = "center")
 
 ggsave("figures\\paper-guessability-blank.pdf",height=5,width=7.5)
@@ -290,11 +296,6 @@ ggplot(data=dp.categories, aes(y=C_cumulative,x=category,colour=C_cumulative)) +
 While the icoplots provide a useful first visualisation, for in a paper we would probably want to use something like raincloud plots that show key features of the distribution across groups.
 
 ```{r visuals}
-
-# make a copy dp of the data in which we convert some measures to factors for easy plotting & facetting
-tofactors <- paste(c("language|category|study|group",names(d[grep('C_',names(d))])),collapse = "|")
-dp <- d
-dp[,grep(tofactors,names(dp))] <- lapply(dp[,grep(tofactors,names(dp))], as.factor)
 
 
 # panel A: scores by study and cumulative iconicity

@@ -1,7 +1,7 @@
 ---
 title: "Triangulating iconicity: Iconicity ratings"
-author: "Mark Dingemanse & Stella Punselie"
-date: "Updated `r format(Sys.Date())`"
+author: "Stella Punselie & Mark Dingemanse"
+date: "(updated `r format(Sys.Date())`)"
 output: github_document
 editor_options: 
   chunk_output_type: console
@@ -65,19 +65,19 @@ personTotalCorrelationCorrected <- function(ptc)
     gather %>%
     dplyr::rename(rater = key, perTotCor = value)
 }
-View(personTotalCorrelationCorrected(ptc))
+personTotalCorrelationCorrected(ptc)
 
 #plot person-total correlations
 ptc %>%
-select(item, rater, rating) %>%
-personTotalCorrelationCorrected %>%
-ggplot(aes(x=perTotCor)) + 
-  geom_density() + 
-  geom_histogram(stat="bin", 
-                 alpha=0.4,
-                 aes(y=..density..),
-                 binwidth=0.1) +
-  labs(x="Person-total correlation")
+  select(item, rater, rating) %>%
+  personTotalCorrelationCorrected %>%
+  ggplot(aes(x=perTotCor)) + 
+    geom_density() + 
+    geom_histogram(stat="bin", 
+                   alpha=0.4,
+                   aes(y=..density..),
+                   binwidth=0.1) +
+    labs(x="Person-total correlation")
 ggsave("figures\\rating_PerTotCorr.png",height=5,width=7.5)
 ```
 
@@ -131,7 +131,7 @@ ggplot(d.means, aes(x=reorder(category,-rating),y=rating,color=category)) +
   scale_colour_viridis_d(option="D",alpha=0.8) +
   xlab("category") + scale_x_discrete(labels = c("Sound","Motion","Shape", 
   "Texture","Colour/Visual"))
-ggsave("figures\\rating_category.png",height=5,width=7.5)
+#ggsave("figures\\rating_category.png",height=5,width=7.5)
 
 #same, but by language
 ggplot(d.means, aes(x=reorder(language,-rating),y=rating,color=language)) +
@@ -140,7 +140,7 @@ ggplot(d.means, aes(x=reorder(language,-rating),y=rating,color=language)) +
   geom_half_point(show.legend=F) +
   scale_colour_viridis_d(option="D",alpha=0.8) +
   xlab("category")
-ggsave("figures\\rating_language.png",height=5,width=7.5)
+#ggsave("figures\\rating_language.png",height=5,width=7.5)
 
 ```
 
@@ -214,7 +214,7 @@ ggplot(d,aes(x=rating_z,y=score_z)) +
   geom_smooth(method=lm,colour="black") +
   theme_tufte(base_size = 16) +
   xlab("rating") + ylab("guessability")
-ggsave("figures\\rating_guessing_corr.png",height=5,width=7.5)
+#ggsave("figures\\rating_guessing_corr.png",height=5,width=7.5)
 
 ggplot(d,aes(x=rating_z,y=score_z)) +   
   geom_point(aes(colour=category,shape=study),position="jitter") +
@@ -236,7 +236,7 @@ ggplot(d,aes(x=rating_z,y=logodds, color=C_cumulative)) +
   scale_colour_viridis(option="plasma",discrete=F,begin=0.3,end=0.9) +
   NULL
 
-plot_ly(data=d,x=rating_z,y=score_z,color=C_simple)
+#plot_ly(data=d,x=rating_z,y=score_z,color=C_simple)
 
 
 ```
