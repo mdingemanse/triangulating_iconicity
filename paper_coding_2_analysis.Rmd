@@ -66,7 +66,7 @@ d <- left_join(d,d.ratings,by=c("filename","study","language"))
 d$rating_z <- scale(d$rating,center=T,scale=T)
 
 # write this dataset as the fullest dataset
-write.csv(d,file="data/ideophones_coded_guessed_rated.csv")
+write.csv(d,file="data/ideophones_coded_guessed_rated.csv",fileEncoding = "UTF-8")
 write_xlsx(d,path="data/ideophones_coded_guessed_rated.xlsx")
 
 # also write a simplified copy for easy inspection in Excel (helpful when writing)

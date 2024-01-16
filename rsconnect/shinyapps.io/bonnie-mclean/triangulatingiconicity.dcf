@@ -1,0 +1,13 @@
+name: triangulatingiconicity
+title: triangulatingiconicity
+username: bonnie-mclean
+account: bonnie-mclean
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 10722788
+bundleId: 8010398
+url: https://bonnie-mclean.shinyapps.io/triangulatingiconicity/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: .RData|bonnieplots/exploratory_analysis.pdf|bonnieplots/sound.pdf|codingscheme.md|paper_coding_1_consistency.Rmd|paper_coding_2_analysis.Rmd|plots_bonnie.R|README.md|Rplot.svg|TI_01_consistency.md|TI_01_consistency.Rmd|TI_02_congruence.md|TI_02_congruence.Rmd|TI_03_ratings.Rmd|TI_03_ratings_BM.md|TI_03_ratings_BM.Rmd|TI_03_ratings_MD.Rmd|TI_04_triangulation.Rmd|TI_functions.R|triangulating_iconicity.Rmd|data|figures|figures_md
