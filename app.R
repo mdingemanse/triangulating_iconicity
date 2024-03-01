@@ -2,7 +2,7 @@ library(tidyverse)
 library(plotly)
 library(ggthemes)
 library(shiny)
-#library(readxl)
+library(readxl)
 library(VGAM)
 library(viridis)
 library(RColorBrewer)
@@ -13,7 +13,7 @@ library(RColorBrewer)
 
 #### So I just make it again here because that works
 # get consensus coding data
-d = read_tsv("shinydat/ideophones_coded.tsv")%>% arrange(filename)
+d = read_excel("data/ideophones_coded.xlsx") %>% arrange(filename)
 
 # add guessability scores from the Collabra and Language studies.
 
@@ -21,10 +21,10 @@ d.scores = read_tsv("shinydat/ideophones_guessability.tsv") %>%
   dplyr::select(-category)
 d <- left_join(d,d.scores,by=c("ideophone","language","study" = "paper"))
 
-# add logodds (for when we run stats: it's more sensible to predict against logodds than raw proportion correct)
+# add score_z (for when we run stats: it's more sensible to predict against score_z than raw proportion correct)
 d <- d %>%
   group_by(study) %>%
-  mutate(logodds = probitlink(score))
+  mutate(score_z = probitlink(score))
 
 # add Z score to make scores more comparable in plots across studies
 d <- d %>%
@@ -58,7 +58,7 @@ d%>%
 # dat$category <- as.factor(dat$category)
 # levels(dat$category) <- c("Sound","Motion","Shape","Texture","ColorVisual","Other")
 # dat%>%
-#   ggplot(aes(x=category,y=logodds))+geom_boxplot()
+#   ggplot(aes(x=category,y=score_z))+geom_boxplot()
 
 # Define UI for app
 ui <- fluidPage(
@@ -105,22 +105,22 @@ server <- function(input, output) {
     if(input$semdom!="All domains"){
       # plots for a single domain, with labels
       filtered_dat%>%
-        ggplot(aes(x=rating_z,y=logodds,size=C_cumulative,label=label,color=C_cumulative))+
+        ggplot(aes(x=rating_z,y=score_z,size=C_cumulative,label=label,color=C_cumulative))+
         geom_point()+
-        theme_tufte()+labs(x="rating (z)",y="guessability (log odds)",size="Cumulative iconicity")+
-        xlim(min(dat$rating_z)-0.2,max(dat$rating_z)+0.2)+ylim(min(dat$logodds)-0.2,max(dat$logodds)+0.2)+
-        geom_text(data=filtered_dat,aes(x=rating_z,y=logodds,label=ideophone),size=4)+
+        theme_tufte()+labs(x="rating (z)",y="guessability (z)",size="Cumulative iconicity")+
+        xlim(min(dat$rating_z)-0.2,max(dat$rating_z)+0.2)+ylim(min(dat$score_z)-0.2,max(dat$score_z)+0.2)+
+        geom_text(data=filtered_dat,aes(x=rating_z,y=score_z,label=ideophone),size=4)+
         scale_fill_viridis(option="plasma",limits=c(1, 4), breaks=seq(1, 4, by=1))+
         scale_colour_viridis(option="plasma",limits=c(1, 4), breaks=seq(1, 4, by=1))->plot
       
     }else{
       # plot for all domains, with labels
       filtered_dat%>%
-        ggplot(aes(x=rating_z,y=logodds,size=C_cumulative,label=label,color=category))+
+        ggplot(aes(x=rating_z,y=score_z,size=C_cumulative,label=label,color=category))+
         geom_point()+theme_dark()+scale_color_brewer(palette = "Accent")+
-        labs(x="rating (z)",y="guessability (log odds)",size="Cumulative iconicity")+
-        xlim(min(dat$rating_z)-0.2,max(dat$rating_z)+0.2)+ylim(min(dat$logodds)-0.2,max(dat$logodds)+0.2)+
-        geom_text(data=filtered_dat,aes(x=rating_z,y=logodds,label=ideophone),size=4)->plot
+        labs(x="rating (z)",y="guessability (z)",size="Cumulative iconicity")+
+        xlim(min(dat$rating_z)-0.2,max(dat$rating_z)+0.2)+ylim(min(dat$score_z)-0.2,max(dat$score_z)+0.2)+
+        geom_text(data=filtered_dat,aes(x=rating_z,y=score_z,label=ideophone),size=4)->plot
     }
       
     }else{
@@ -128,19 +128,19 @@ server <- function(input, output) {
       if(input$semdom!="All domains"){
         # plots for a single domain, without labels
         filtered_dat%>%
-          ggplot(aes(x=rating_z,y=logodds,size=C_cumulative,label=label,color=C_cumulative))+
+          ggplot(aes(x=rating_z,y=score_z,size=C_cumulative,label=label,color=C_cumulative))+
           geom_point()+
-          theme_tufte()+labs(x="rating (z)",y="guessability (log odds)",size="Cumulative iconicity")+
-          xlim(min(dat$rating_z)-0.2,max(dat$rating_z)+0.2)+ylim(min(dat$logodds)-0.2,max(dat$logodds)+0.2)+
+          theme_tufte()+labs(x="rating (z)",y="guessability (z)",size="Cumulative iconicity")+
+          xlim(min(dat$rating_z)-0.2,max(dat$rating_z)+0.2)+ylim(min(dat$score_z)-0.2,max(dat$score_z)+0.2)+
           scale_fill_viridis(option="plasma",limits=c(1, 4), breaks=seq(1, 4, by=1))+
           scale_colour_viridis(option="plasma",limits=c(1, 4), breaks=seq(1, 4, by=1))->plot
       }else{
         # plot for all domains, without labels
         filtered_dat%>%
-          ggplot(aes(x=rating_z,y=logodds,size=C_cumulative,label=label,color=category))+
+          ggplot(aes(x=rating_z,y=score_z,size=C_cumulative,label=label,color=category))+
           geom_point()+theme_dark()+scale_color_brewer(palette = "Accent")+
-          labs(x="rating (z)",y="guessability (log odds)",size="Cumulative iconicity")+
-          xlim(min(dat$rating_z)-0.2,max(dat$rating_z)+0.2)+ylim(min(dat$logodds)-0.2,max(dat$logodds)+0.2)->plot
+          labs(x="rating (z)",y="guessability (z)",size="Cumulative iconicity")+
+          xlim(min(dat$rating_z)-0.2,max(dat$rating_z)+0.2)+ylim(min(dat$score_z)-0.2,max(dat$score_z)+0.2)->plot
       } 
     }
       ggplotly(plot)
