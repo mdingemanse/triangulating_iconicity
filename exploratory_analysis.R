@@ -1,5 +1,7 @@
 library(ggrepel)
 library(tidyverse)
+library(readxl)
+library(viridis)
 #### For some reason writing the d dataset from paper_coding_2_analysis.Rmd
 #### to utf-8 and then reading it in here as a utf-8 file didn't work :(
 
@@ -13,10 +15,6 @@ d.scores = read_excel("data\\ideophones_guessability.xlsx") %>%
   dplyr::select(-category)
 d <- left_join(d,d.scores,by=c("ideophone","language","study" = "paper"))
 
-# add logodds (for when we run stats: it's more sensible to predict against logodds than raw proportion correct)
-d <- d %>%
-  group_by(study) %>%
-  mutate(logodds = probitlink(score))
 
 # add Z score to make scores more comparable in plots across studies
 d <- d %>%
@@ -41,10 +39,53 @@ d%>%
   mutate(label=paste(ideophone,meaning,features,sep="\n"))->dat
 
 # Overview plot
+
+dat$category <- factor(dat$category,levels=c("Sound","Motion","Shape","Texture","ColorVisual","Other"))
 dat%>%
-  ggplot(aes(x=rating_z,y=logodds,size=C_cumulative))+geom_point()+
-  labs(x="rating (z)",y="guessability (log odds)",size="Cumulative iconicity")+
-  facet_wrap(~category)+theme_tufte()
+  ggplot(aes(x=rating_z,y=score_z,color=C_cumulative))+geom_point()+
+  labs(x="rating (z)",y="guessabing accuracy (z)",colour="cumulative iconicity")+
+  facet_wrap(~category)+
+  scale_colour_viridis(option="plasma")+
+  theme_minimal()
+
+## Compute correlations
+
+sound <- dat%>%filter(category=="Sound")
+cor.test(sound$score_z,sound$rating_z)
+motion <- dat%>%filter(category=="Motion")
+cor.test(motion$score_z,motion$rating_z)
+shape <- dat%>%filter(category=="Shape")
+cor.test(shape$score_z,shape$rating_z)
+texture <- dat%>%filter(category=="Texture")
+cor.test(texture$score_z,texture$rating_z)
+colour <- dat%>%filter(category=="ColorVisual")
+cor.test(colour$score_z,colour$rating_z)
+
+## Looking at the cumulative iconicity measures by category
+
+d%>%
+  group_by(category)%>%
+  summarise(modality=mean(C_modality),
+            aspect_iterative=mean(C_iterative),
+            irregular=mean(C_irregular),
+            length_closure=mean(C_closure),
+            length_punctual=mean(C_punctual),
+            length_long=mean(C_long),
+            magnitude_voice=mean(C_weight_voice),
+            magnitude_vowel=mean(C_weight_vowel),
+            magnitude_tone=mean(C_weight_tone
+                             ))%>%
+  write_tsv("mean_cumulative_iconicity_feats.tsv")
+
+# correlations
+
+cor.test(sound$score_z,sound$C_cumulative)
+cor.test(sound$rating_z,sound$C_cumulative)
+cor.test(motion$score_z,motion$C_cumulative)
+cor.test(motion$rating_z,motion$C_cumulative)
+cor.test(colour$score_z,colour$C_cumulative)
+cor.test(colour$rating_z,colour$C_cumulative)
+
 
 # Add info on ideophones of note here
 
