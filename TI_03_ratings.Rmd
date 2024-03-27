@@ -87,16 +87,16 @@ Two other participatns (N022 and N034) also had to be removed because of their k
 
 ```{r}
 # load corrected data
-d <- read_xlsx("data\\ideophones_rated.xlsx")
-d.means <- read_xlsx("data\\ideophones_rated_means.xlsx")
+d.allratings <- read_xlsx("data\\ideophones_rated.xlsx")
+d.allratings.means <- read_xlsx("data\\ideophones_rated_means.xlsx")
 
 # get means and standard deviations across all ideophones and for each language and category
-mean(d$rating)
+mean(d.allratings$rating)
   # 2.948339
-sd(d$rating)
+sd(d.allratings$rating)
   # 1.297106
-sumcat <- ddply(d,~category,summarise,mean=mean(rating),sd=sd(rating))
-sumlang <- ddply(d,~language,summarise,mean=mean(rating),sd=sd(rating))
+sumcat <- ddply(d.allratings,~category,summarise,mean=mean(rating),sd=sd(rating))
+sumlang <- ddply(d.allratings,~language,summarise,mean=mean(rating),sd=sd(rating))
 
 ```
 
@@ -104,15 +104,15 @@ Because the category "Other" is quite a vague residual category with only 17 ite
 
 ```{r}
 #create copy of data including the category "Other"
-d.other <- read_xlsx("data\\ideophones_rated.xlsx")
-d.m.other <- read_xlsx("data\\ideophones_rated_means.xlsx")
+d.allratings.other <- read_xlsx("data\\ideophones_rated.xlsx")
+d.allratings.means.other <- read_xlsx("data\\ideophones_rated_means.xlsx")
 
 #remove category "Other" from d and d.means
-d <- d[!grepl("Other",d$category),]
-d.means <- d.means[!grepl("Other",d.means$category),]
+d.allratings <- d.allratings[!grepl("Other",d.allratings$category),]
+d.allratings.means <- d.allratings.means[!grepl("Other",d.allratings.means$category),]
 
 # make new summary for language (without the Japanese "other" ideophones)
-sumlang2 <- ddply(d,~language,summarise,mean=mean(rating),sd=sd(rating))
+sumlang2 <- ddply(d.allratings,~language,summarise,mean=mean(rating),sd=sd(rating))
 ```
 
 Here we plot the distribution of the rating data.
@@ -120,11 +120,11 @@ Here we plot the distribution of the rating data.
 ```{r}
 #convert some columns to factors
 cols <- c("category","language","study")
-d[cols] <- lapply(d[cols], factor)
-d.means[cols] <- lapply(d.means[cols], factor)
+d.allratings[cols] <- lapply(d.allratings[cols], factor)
+d.allratings.means[cols] <- lapply(d.allratings.means[cols], factor)
 
 #combined boxplot and scatterplot by category
-ggplot(d.means, aes(x=reorder(category,-rating),y=rating,color=category)) +
+ggplot(d.allratings.means, aes(x=reorder(category,-rating),y=rating,color=category)) +
   theme_tufte(base_size=16) +
   geom_half_boxplot(aes(middle=mean(rating)),show.legend=F) +
   geom_half_point(show.legend=F) +
@@ -134,7 +134,7 @@ ggplot(d.means, aes(x=reorder(category,-rating),y=rating,color=category)) +
 #ggsave("figures\\rating_category.png",height=5,width=7.5)
 
 #same, but by language
-ggplot(d.means, aes(x=reorder(language,-rating),y=rating,color=language)) +
+ggplot(d.allratings.means, aes(x=reorder(language,-rating),y=rating,color=language)) +
   theme_tufte(base_size=16) +
   geom_half_boxplot(aes(middle=mean(rating)),show.legend=F) +
   geom_half_point(show.legend=F) +
@@ -152,22 +152,22 @@ First, we check the assumptions.
 
 ```{r}
 # check normality by visual inspection
-ggqqplot(d, "rating", facet.by = "category")
+ggpubr::ggqqplot(d.allratings, "rating", facet.by = "category")
   # all points fall approximately along the reference line, so normality can be assumed
 
 # check homogeneity of variance with Levene's test
 leveneTest(rating~category,data=d)
 leveneTest(rating~language,data=d)
-  # both are not significant (> .05), so homogeneity of variance can be assumed
+# both are not significant (> .05), so homogeneity of variance can be assumed
 ```
 
 Now we construct a linear model with category as a predictor of the iconicity ratings.
 
 ```{r}
-summary(lm.cat <- lm(rating ~ category, d))
+summary(lm.cat <- lm(rating ~ category, d.allratings))
 
 # pairwise comparisons with Tukey adjustments in the emmeans package
-emm.cat <- emmeans(lm.cat, "category")
+emm.cat <- emmeans::emmeans(lm.cat, "category")
 pairs(emm.cat)
 pwpm(emm.cat)
 ```
@@ -175,7 +175,7 @@ pwpm(emm.cat)
 And here we do the same with language as predictor.
 
 ```{r}
-summary(lm.lang <- lm(rating ~ language, d))
+summary(lm.lang <- lm(rating ~ language, d.allratings))
 
 # pairwise comparisons in emmeans package
 emm.lang <- emmeans(lm.lang, "language")
