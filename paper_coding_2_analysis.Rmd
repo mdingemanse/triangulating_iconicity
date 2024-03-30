@@ -1,6 +1,6 @@
 ---
 title: "Triangulating iconicity: Coding analysis"
-author: "Mark Dingemanse & Stella Punselie"
+author: "Mark Dingemanse, Stella Punselie, Bonnie McLean"
 date: "Updated `r format(Sys.Date())`"
 output: github_document
 editor_options: 
@@ -39,11 +39,11 @@ Here we load the ground truth version of the coded data and add the independentl
 ```{r data}
 
 # get consensus coding data
-d = read_excel("data\\ideophones_coded.xlsx") %>% arrange(filename)
+d = read_excel("data/ideophones_coded.xlsx") %>% arrange(filename)
 
 # add guessability scores from the Collabra and Language studies.
 
-d.scores = read_excel("data\\ideophones_guessability.xlsx") %>%
+d.scores = read_excel("data/ideophones_guessability.xlsx") %>%
   dplyr::select(-category)
 d <- left_join(d,d.scores,by=c("ideophone","language","study" = "paper"))
 
@@ -58,9 +58,10 @@ d <- d %>%
   mutate(score_z = scale(score,center=T,scale=T))
 
 # get ratings data
-d.ratings <- read_xlsx("data\\ideophones_rated_means.xlsx") %>%
+d.ratings <- read_xlsx("data/ideophones_rated_means.xlsx") %>%
   dplyr::select(-category,-list,-item)
-d <- left_join(d,d.ratings,by=c("filename","study","language"))
+d <- left_join(d,d.ratings,by=c("filename","study","language")) |>
+  mutate(filename = gsub("_org","",filename))
 
 # add z score for ratings
 d$rating_z <- scale(d$rating,center=T,scale=T)
@@ -74,6 +75,20 @@ d %>%
   dplyr::select(ideophone,meaning,language,category,meaning_NL,study,score,rating,C_aspect,C_magnitude,C_modality,C_length,C_irregular,C_cumulative) %>%
   write_xlsx(path="data/ideophones_coded_guessed_rated_simplified.xlsx")
 
+ideophones_filename <- d |> ungroup() |> select(ideophone,filename) |>
+  mutate(filename = str_to_lower(filename))
+
+# load the full ratings data for some of the reporting in the paper
+d.ratings.full <- read_xlsx("data\\ideophones_rated.xlsx") |>
+  mutate(list = gsub(".*([A-Z])$", "\\1",item)) |>
+  mutate(filename = gsub("^(.*)_.*$", "\\1", str_to_lower(item))) |>
+  mutate(filename = gsub("Coll_","", filename)) |>
+  select(-item) 
+
+# match the data to ideophones for easier lookup
+d.ratings.full <- left_join(d.ratings.full,
+                  ideophones_filename,by="filename",copy=TRUE)
+
 
 ```
 
@@ -84,7 +99,7 @@ Here we generate some descriptive stats and create the main figures for the pape
 
 d %>%
   group_by(study) %>%
-  summarize(max=max(score),min=min(score),mean=mean.na(score))
+  dplyr::summarize(max=max(score),min=min(score),mean=mean.na(score))
 
 ```
 
@@ -105,21 +120,14 @@ ggplot(data=dp, aes(x=study,y=score)) +
   stat_summary(fun=median,geom="point",size=8,shape=21,stroke=1,fill="white",colour="#c9c9c9") +
   geom_dotplot(colour="white",fill="black",stackgroups=T,dotsize=1.5,binwidth=0.01,binaxis="y",stackdir = "center")
 
-ggsave("figures\\paper-guessability-blank.pdf",height=5,width=7.5)
-
-d %>% filter(filename=="Korean_23_Motion_org") %>% View()
+ggsave("figures\\fig2-guessability-blank.pdf",height=5,width=7.5)
 
 
 ```
 
-
-### Figure: Guessability by study and iconicity rating
+Let's plot the guessability by study and iconicity rating
 
 ```{r figures_paper_guessability_rating}
-tofactors <- paste(c("language|category|study|group",names(d[grep('C_',names(d))])),collapse = "|")
-dp <- d
-dp[,grep(tofactors,names(dp))] <- lapply(dp[,grep(tofactors,names(dp))], as.factor)
-
 
 # panel A: scores by study and cumulative iconicity
 pA <- ggplot(data=dp, aes(x=study,y=score,fill=study,colour=study)) +
@@ -140,21 +148,15 @@ pB <- ggplot(data=dp, aes(x=rating,y=score,fill=study,colour=study)) +
   NULL
 
 plot_grid(pA,pB,labels=c("A","B"),label_size=14,rel_widths = c(1.4,2))
-ggsave("figures\\paper_panelAB_guessing_rating.png",height=5,width=9)
+#ggsave("figures\\paper_panelAB_guessing_rating.png",height=5,width=9)
 
 
 
 ```
 
-### Figure: Guessability and cumulative iconicity
+### Figure 3: Guessability and cumulative iconicity
 
 ```{r figures_paper_guessability_coding}
-
-# make a copy dp of the data in which we convert some measures to factors for easy plotting & facetting
-tofactors <- paste(c("language|category|study|group",names(d[grep('C_',names(d))])),collapse = "|")
-dp <- d
-dp[,grep(tofactors,names(dp))] <- lapply(dp[,grep(tofactors,names(dp))], as.factor)
-
 
 # panel A: scores by study and cumulative iconicity
 pA <- ggplot(data=dp, aes(x=study,y=score,fill=C_cumulative,colour=C_cumulative)) +
@@ -180,12 +182,75 @@ pB <- ggplot(data=dp, aes(x=C_cumulative,y=score_z,colour=C_cumulative)) +
   NULL
 
 plot_grid(pA,pB,labels=c("A","B"),label_size=14,rel_widths = c(1.4,2))
-ggsave("figures\\paper_panelAB.png",height=5,width=9)
+ggsave("figures\\fig3-panelAB.png",height=4,width=9,bg="white")
 
 
 ```
 
-### Figure: Ratings and cumulative iconicity
+### Figure 4: Ratings by study (A) and by semantic domain (B)
+
+Panel figure for Study B providing a view of ratings per study and per semantic domain.
+
+```{r fig4_panel}
+
+
+#panel A: ratings by study
+pA <- d |>  ggplot(aes(x=score_z,y=rating)) +   
+  theme_tufte(base_size = 16) +
+  theme(legend.position = c(0.2,0.9),
+        legend.title = element_blank()) +
+  scale_fill_manual(values=c("white","black")) +
+  geom_point(aes(fill=study),
+             position="jitter",
+             shape=21,
+             colour="black") +
+  geom_smooth(method=loess,colour="black",alpha=0.5) +
+  xlab("guessability (z)") + ylab("rating") +
+  NULL
+
+#panel B: ratings by semantic domain
+pB <- d |>
+  filter(category != "Other") |>
+  ggplot(aes(x=reorder(category,-rating),y=rating,color=category)) +
+  theme_tufte(base_size=16) +
+  geom_half_boxplot(aes(middle=mean(rating)),show.legend=F) +
+  geom_half_point(show.legend=F) +
+  scale_colour_viridis_d(option="D",alpha=0.8) +
+  xlab("category") + scale_x_discrete(labels = c("Sound","Motion","Shape", 
+  "Texture","Colour/Visual"))
+
+plot_grid(pA,pB,labels=c("A","B"),label_size=14,rel_widths = c(1.6,2))
+ggsave("figures/fig4-panel_ratings.png",height=4,width=9,bg="white")
+
+
+# a correlation test shows a Pearson correlation of .57 between iconicity rating
+# and guessability
+cor.test(d$rating_z,d$logodds,method="pearson")
+
+
+```
+
+Table 3: Examples of ideophones from the low/high rating/guessability quadrants
+
+```{r example_ratings_guessables}
+
+# these examples are given in Table 3 in the paper
+examples <- c("ton ton","kpa",
+              "slʔẽẽk","miɔmiɔ",
+              "kodzokodzo","ɟtoonɟtoonɟtoon",
+              "fututu", "plɒ̃s")
+d |>
+  filter(ideophone %in% examples) |>
+  group_by(ideophone,language) |>
+  dplyr::summarise(n=n(),
+                   mean_rating = mean(rating),
+                   score = score)
+
+
+```
+
+
+### Figure 5: Ratings and cumulative iconicity
 
 ```{r ratings_and_C}
 
@@ -213,208 +278,17 @@ pB <- ggplot(data=dp, aes(x=C_cumulative,y=rating,colour=C_cumulative)) +
   NULL
 
 plot_grid(pA,pB,labels=c("A","B"),label_size=14,rel_widths = c(1.4,2))
-ggsave("figures\\paper_panelAB_ratings.png",height=5,width=9)
+ggsave("figures/fig6-panelAB_ratings.png",height=5,width=9,bg="white")
 
 
 ```
-
-### Figure: Mappings and semantic domains 
-
-```{r figure_mappings_domains}
-
-library(forcats)
-dp.categories <- d %>%
-  filter(category %notin% "Other") %>%
-  mutate(category = fct_reorder(category, -C_cumulative, .fun='mean')) %>%
-  mutate(category_binary = ifelse(category %in% c("Sound","Motion"),"SoundMotion","ColorvisualShapeTexture")) %>%
-  mutate(C_nosound = C_aspect + C_length + C_irregular + C_magnitude) %>% # for control analysis
-  mutate(C_strongestpredictors = C_aspect + C_length + C_modality ) # for another control analysis
-
-
-dp.categories %>%
-  group_by(category) %>%
-  summarise(n=n(),mean_C=mean.na(C_cumulative),mean_rating=mean.na(rating),mean_score=mean.na(score)) %>%
-  arrange(-mean_C)
-
-dp.categories %>%
-  group_by(category) %>%
-  summarise(n=n(),mean_C=mean.na(C_strongestpredictors),mean_rating=mean.na(rating),mean_score=mean.na(score)) %>%
-  arrange(-mean_C)
-
-
-dp.categories %>%
-  ungroup() %>%
-  group_by(category_binary) %>%
-  summarise(n=n(),mean_C=mean.na(C_cumulative),mean_rating=mean.na(rating),mean_score=mean.na(score)) %>%
-  arrange(-mean_C)
-
-group1 <- subset(dp.categories, category_binary == "SoundMotion")$C_cumulative
-group2 <- subset(dp.categories, category_binary == "ColorvisualShapeTexture")$C_cumulative
-t.test(group1,group2)
-library(effsize)
-cohen.d(group1,group2)
-
-
-# also when we exclude C_modality? yes
-dp.categories %>%
-  group_by(category) %>%
-  summarise(n=n(),mean_C=mean.na(C_nosound),mean_rating=mean.na(rating),mean_score=mean.na(score)) %>%
-  arrange(-mean_C)
-dp.categories %>%
-  group_by(category_binary) %>%
-  summarise(n=n(),mean_C=mean.na(C_nosound),mean_rating=mean.na(rating),mean_score=mean.na(score)) %>%
-  arrange(-mean_C)
-
-group1 <- subset(dp.categories, category_binary == "SoundMotion")$C_nosound
-group2 <- subset(dp.categories, category_binary == "ColorvisualShapeTexture")$C_nosound
-t.test(group1,group2)
-cohen.d(group1,group2)
-
-
-ggplot(data=dp.categories, aes(y=C_cumulative,x=category,colour=C_cumulative)) +
-  theme_tufte() + theme(legend.position="none") +
-  labs(title="Cumulative iconicity by semantic domain") +
-  geom_half_violin() +
-  geom_half_point() +
-  scale_fill_viridis(option="plasma",discrete=T,begin=0.3,end=0.9) +
-  scale_colour_viridis(option="plasma",discrete=T,begin=0.3,end=0.9) +
-  NULL
-
-ggplot(data=dp.categories, aes(y=C_cumulative,x=category,colour=C_cumulative)) +
-  theme_tufte() + theme(legend.position="none") +
-  labs(title="Cumulative iconicity by semantic domain") +
-  geom_hex() +
-  NULL
-
-
-
-```
-
-
-
-### Raincloud plots
-While the icoplots provide a useful first visualisation, for in a paper we would probably want to use something like raincloud plots that show key features of the distribution across groups.
-
-```{r visuals}
-
-
-# panel A: scores by study and cumulative iconicity
-ggplot(data=dp, aes(x=study,y=score,fill=C_cumulative,colour=C_cumulative)) +
-  theme_tufte() + ylim(0,1) + theme(legend.position="none",axis.title.x=element_blank()) + 
-  labs(title="Guessability by study and cumulative iconicity") +
-  scale_fill_viridis(option="plasma",discrete=T,begin=0.3,end=0.9) +
-  scale_colour_viridis(option="plasma",discrete=T,begin=0.3,end=0.9) +
-  stat_summary(fun.y=median,geom="point",size=8,shape=21,stroke=1,fill="white") +
-  geom_dotplot(stackgroups=T,dotsize=1.5,binwidth=0.01,binaxis="y",stackdir = "center")
-
-
-ggplot(data=dp, aes(x=C_cumulative,y=logodds)) +
-  theme_tufte() +
-  labs(title="Guessability (log odds) by cumulative iconicity",
-       x="cumulative iconicity",
-       y="guessability (log odds)") +
-  geom_half_boxplot() +
-  geom_half_point() +
-  NULL
-
-ggplot(data=dp, aes(x=C_any1,y=logodds)) +
-  theme_tufte() +
-  geom_half_boxplot() +
-  geom_half_point() +
-  NULL
-
-
-ggplot(data=dp, aes(x=C_atleast2,y=logodds)) +
-  theme_tufte() +
-  geom_half_boxplot() +
-  geom_half_point() +
-  NULL
-
-ggplot(data=dp, aes(x=C_ternary,y=logodds)) +
-  theme_tufte() +
-  geom_half_boxplot() +
-  geom_half_point() +
-  NULL
-
-
-ggplot(data=dp, aes(x="all",y=score_z)) +
-  theme_tufte() +
-  geom_half_boxplot() +
-  geom_half_point(side="l") +
-  geom_half_violin(side="r") +
-  NULL
-
-ggplot(data=dp, aes(x=C_cumulative,y=logodds,color=C_cumulative,fill=C_cumulative)) +
-  theme_tufte() +
-  geom_half_violin() +
-  geom_half_point_panel() +
-  scale_fill_viridis(option="plasma",discrete=T,begin=0.3,end=0.9) +
-  scale_colour_viridis(option="plasma",discrete=T,begin=0.3,end=0.9) 
-
-icoplot("C_cumulative")
-
-ggplot(data=dp, aes(x=C_cumulative,y=logodds,color=C_cumulative,fill=C_cumulative)) +
-  theme_tufte() +
-  geom_half_violin() +
-  geom_half_point_panel() +
-  scale_fill_viridis(option="plasma",discrete=T,begin=0.3,end=0.9) +
-  scale_colour_viridis(option="plasma",discrete=T,begin=0.3,end=0.9) +
-  facet_grid(~ study)
-
-```
-
-
-### Dotplots
-
-A quick look at some congruency measures. Uses a custom plotting function `icoplot()`, which is a wrapper for a ggplot object constructed with `geom_dotplot`.
-
-
-```{r icoplots}
-
-
-# all data points by language
-icoplot() # icoplot() is loaded from TI_functions.R
-
-icoplot("C_modality")
-icoplot("C_aspect")
-icoplot("C_length")
-icoplot("C_magnitude")
-icoplot("C_irregular")
-icoplot("C_cumulative")
-
-# how do the constituents of C_magnitude fare?
-icoplot("C_magnitude")
-icoplot("C_weight_voice")
-icoplot("C_weight_vowel")
-icoplot("C_weight_tone")
-
-icoplot("C_any1")
-icoplot("C_atleast2")
-icoplot("C_ternary")
-icoplot("C_simple")
-
-# blank plot can be useful as background for slides
-ggplot(data=dp, aes(x=study,y=score)) +
-  theme_tufte() + ylim(0,1) + theme(legend.position="none",axis.title.x=element_blank(),plot.margin=margin(0,0,10,0)) + 
-  stat_summary(fun.y=median,geom="point",size=8,shape=21,stroke=1,fill="white",colour="#c9c9c9") +
-  geom_dotplot(colour="white",fill="#c9c9c9",stackgroups=T,dotsize=1.5,binwidth=0.01,binaxis="y",stackdir = "center")
-
-# facet by language to discover crosslinguistic diversity
-ggplot(data=dp, aes(x=study,y=score)) +
-  theme_tufte() + ylim(0,1) + theme(legend.position="none",axis.title.x=element_blank(),plot.margin=margin(0,0,10,0)) + 
-  stat_summary(fun.y=median,geom="point",size=8,shape=21,stroke=1,fill="white",colour="#c9c9c9") +
-  geom_dotplot(colour="white",fill="#c9c9c9",stackgroups=T,dotsize=1.5,binwidth=0.01,binaxis="y",stackdir = "center")
-
-
-```
-
 
 ## Numbers
 
 ### Coding and guessability
 As the visualizations already make clear there is a non-trivial positive relation between the presence of iconic mappings (in a cumulative sense) and the guessability score determined in experimental work.
 
-The simplest thing to do is a simple correlation. Looks like there is an r=0.30 correlation between logodds and C_cumulative.
+The simplest thing to do is a correlation. 
 
 ```{r congruency_stats_1}
 
@@ -431,7 +305,7 @@ p0 <- cor.test(d$logodds,d$C_cumulative,method="pearson")$p.value
 p1 <- cor.test(d.Collabra$logodds,d.Collabra$C_cumulative,method="pearson")$p.value
 p2 <- cor.test(d.Language$logodds,d.Language$C_cumulative,method="pearson")$p.value
 p.adjust(c(p0,p1,p2),method="bonferroni")
-
+pvalues <-p.adjust(c(p0,p1,p2),method="bonferroni")  
 
 ```
 
@@ -450,10 +324,13 @@ m0 <- lmer(logodds ~ study + (1|ideophone), data=d)
 m1 <- lmer(logodds ~ study + C_cumulative + (1|ideophone), data=d)
 anova(m0,m1)
 
+# fixed effects
 fixef(m1)
 
-probitlink(0.1823,inverse=T)-0.5
-probitlink(-0.5242,inverse=T)-0.5
+# turn this into a percentage under the simplifying assumption that the distance
+# between iconicity measures is the same at every scale point
+probitlink(fixef(m1)[[3]],inverse=T)-0.5
+probitlink(fixef(m1)[[2]],inverse=T)-0.5
 
 
 
@@ -490,106 +367,133 @@ fixef(m8)
 
 probitlink(fixef(m8)[1],inverse=T)-0.5
 probitlink(fixef(m8)[2],inverse=T)-0.5
-probitlink(fixef(m8)[3],inverse=T)-0.5
-probitlink(fixef(m8)[4],inverse=T)-0.5
-probitlink(fixef(m8)[5],inverse=T)-0.5
+probitlink(fixef(m8)[3],inverse=T)-0.5 # aspect
+probitlink(fixef(m8)[4],inverse=T)-0.5 # modality
+probitlink(fixef(m8)[5],inverse=T)-0.5 # length
 
 
 
 ```
 
-### Semantic domains
+### Structural correspondences and semantic domains 
+
 Our prediction is that Sound and Motion ideophones should show more structural correspondences than the other domains. This is borne out.
 
-```{r coding_semanticdomains} 
+```{r descriptive_semantic_domains}
 
-library(forcats)
 dp.categories <- d %>%
   filter(category %notin% "Other") %>%
-  mutate(category = fct_reorder(category, -C_cumulative, .fun='mean')) %>%
+  mutate(category = forcats::fct_reorder(category, -C_cumulative, .fun='mean')) %>%
   mutate(category_binary = ifelse(category %in% c("Sound","Motion"),"SoundMotion","ColorvisualShapeTexture")) %>%
   mutate(C_nosound = C_aspect + C_length + C_irregular + C_magnitude) %>% # for control analysis
   mutate(C_strongestpredictors = C_aspect + C_length + C_modality ) # for another control analysis
 
 
-dp.categories %>%
-  group_by(category) %>%
-  summarise(n=n(),mean_C=mean.na(C_cumulative),mean_rating=mean.na(rating),mean_score=mean.na(score)) %>%
+# mean of C_cumuluative
+dp.categories |>
+  group_by(category) |>
+  dplyr::summarise(n=n(),mean_C=mean.na(C_cumulative),mean_rating=mean.na(rating),mean_score=mean.na(score)) %>%
   arrange(-mean_C)
 
-dp.categories %>%
-  group_by(category) %>%
-  summarise(n=n(),mean_C=mean.na(C_strongestpredictors),mean_rating=mean.na(rating),mean_score=mean.na(score)) %>%
-  arrange(-mean_C)
+# mean of only the strongest predictors
+dp.categories |>
+  group_by(category) |>
+  dplyr::summarise(n=n(),mean_strongest=mean.na(C_strongestpredictors),mean_rating=mean.na(rating),mean_score=mean.na(score)) |>
+  arrange(-mean_strongest)
 
-
-dp.categories %>%
-  ungroup() %>%
+# binary comparison
+dp.categories |>
+  ungroup() |>
   group_by(category_binary) %>%
-  summarise(n=n(),mean_C=mean.na(C_cumulative),mean_rating=mean.na(rating),mean_score=mean.na(score)) %>%
+  dplyr::summarise(n=n(),mean_C=mean.na(C_cumulative),mean_rating=mean.na(rating),mean_score=mean.na(score)) |>
   arrange(-mean_C)
 
 group1 <- subset(dp.categories, category_binary == "SoundMotion")$C_cumulative
 group2 <- subset(dp.categories, category_binary == "ColorvisualShapeTexture")$C_cumulative
 t.test(group1,group2)
-library(effsize)
-cohen.d(group1,group2)
-
+effsize::cohen.d(group1,group2)
 
 # also when we exclude C_modality? yes
-dp.categories %>%
-  group_by(category) %>%
-  summarise(n=n(),mean_C=mean.na(C_nosound),mean_rating=mean.na(rating),mean_score=mean.na(score)) %>%
+dp.categories |>
+  group_by(category) |>
+  dplyr::summarise(n=n(),mean_C=mean.na(C_nosound),mean_rating=mean.na(rating),mean_score=mean.na(score)) |>
   arrange(-mean_C)
-dp.categories %>%
-  group_by(category_binary) %>%
-  summarise(n=n(),mean_C=mean.na(C_nosound),mean_rating=mean.na(rating),mean_score=mean.na(score)) %>%
+dp.categories |>
+  group_by(category_binary) |>
+  dplyr::summarise(n=n(),mean_C=mean.na(C_nosound),mean_rating=mean.na(rating),mean_score=mean.na(score)) |>
   arrange(-mean_C)
 
 group1 <- subset(dp.categories, category_binary == "SoundMotion")$C_nosound
 group2 <- subset(dp.categories, category_binary == "ColorvisualShapeTexture")$C_nosound
 t.test(group1,group2)
-cohen.d(group1,group2)
+effsize::cohen.d(group1,group2)
 
 ```
 
-We can also look in more detail at the relative differences by semantic domain by building a mixed model that predicts cumulative iconicity with domain as a predictor.
 
-```{r coding_category_lme}
+### Study B: Rating iconicity
 
-m0 <- lm(C_cumulative ~ category, data=d)
-effsizes(m0)
+Here we look at the iconicity ratings for all ideophones across both studies.
 
-```
+```{r coding_ratings_descriptives}
 
-Another prediction is that Sound and Motion ideophones should receive higher iconicity ratings than other domains. This prediction is also borne out.
+d.ratings.full |>
+  group_by(ideophone,language) |>
+  dplyr::summarise(n=n(),mean=mean.na(rating),sd=sd.na(rating))
 
-```{r rating_domains}
+# get means and standard deviations across all ideophones and for each language and category
+mean(d.allratings$rating)
+  # 2.948339
+sd(d.allratings$rating)
 
-group1 <- subset(dp.categories, category_binary == "SoundMotion")$rating
-group2 <- subset(dp.categories, category_binary == "ColorvisualShapeTexture")$rating
-t.test(group1,group2)
-cohen.d(group1,group2)
+examples <- c("kpa","boo boo","zuratto", "plɒ̃s")
+d.ratings.full |>
+  filter(ideophone %in% examples) |>
+  group_by(ideophone,language) |>
+  dplyr::summarise(n=n(),
+                   mean_rating = mean(rating),
+                   sd_rating = sd(rating))
 
-
-
-
-```
-
-### Coding and ratings
-
-As above, the simplest thing to do is run a simple correlation: there is an r=0.43 correlation between meaning iconicity ratings and cumulative iconicity.
-
-```{r coding_ratings}
-
-cor.test(d$rating_z,d$C_cumulative,method="pearson")
 
 ```
 
-As above, we can go a bit deeper by using mixed effects modelling. We expect a smaller effect of study on the ratings, as the difference in design in terms of selection of foils falls away. However, the studies are also different in terms of 
+There appears to be a positive correlation between the rating and guessing data.
+
+
+### Ratings: numbers
+
+Iconicity ratings by semantic domain
+
+```{r ratings_by_domain}
+
+d.ratings.full |>
+  filter(category != "Other") |>
+  group_by(category) |>
+  dplyr::summarise(n=n(),
+                   mean_rating=mean(rating),
+                   sd_rating = sd(rating)) |>
+  arrange(desc(mean_rating))
+
+
+```
+
+
+
+```{r linear_regressions}
+
+```
+
+
+How do iconicity ratings relate to structural correspondences?
+
+A simple correlation test suggests a positive relation between iconicity rating and cumulative iconicity. As above, we can go a bit deeper by using mixed effects modelling. We expect a smaller effect of study on the ratings, as the difference in design in terms of selection of foils falls away.
 
 ```{r coding_ratings_lme}
 
+# simple correlation test
+cor.test(d$rating_z,d$C_cumulative,method="pearson")
+
+# lme
 m0 <- lmer(rating ~ study + (1|ideophone), data=d)
 m1 <- lmer(rating ~ study + C_cumulative + (1|ideophone), data=d)
 anova(m0,m1)
@@ -598,7 +502,7 @@ fixef(m1)
 
 ```
 
-We can assess the relative weight of different features using model comparison. We build models by adding the congruency measures in rank order of attestation in the coded data. Doing this we find that C_aspect, C_modality and C_length are responsible for the bulk of the variance. Compared to the null model that only represents the baseline difference between studies, model `m8` fares significantly better (log likelihood difference = 21.3).
+As above, we can assess the relative weight of different features using model comparison. We build models by adding the congruency measures in rank order of attestation in the coded data. Doing this we find that C_aspect, C_modality and C_length are responsible for the bulk of the variance. Compared to the null model that only represents the baseline difference between studies, model `m8` fares significantly better (log likelihood difference = 21.3).
 
 The model estimates given in the output of `fixef(m8)` represent the contribution of a given fixed effect while controlling for others, but they are NOT additive (i.e. can't be summed to arrive at the effect of `C_cumulative`).
 
@@ -627,211 +531,6 @@ anova(m0,m8)
 summary(m8)
 fixef(m8)
 
-
-
-```
-
-### Control analysis: results stand even when leaving out C_modality
-
-The `C_modality` congruence measure is intended to capture the fact that spoken words can show a range of acoustic similarities to sonic events, independently from other structural correspondences (in other words, it separates imagic iconicity from Gestalt iconicity and relative iconicity). We don't code for specific acoustic correspondences, because these would be by nature only apply to ideophones evocative of sound and would greatly complicate the coding scheme.
-
-This makes it the least fine-grained coding category. And given that it applies to a semantic domain that is known, from prior work and first principles, to be easiest to guess, one could think of `C_modality` as just giving sound words a leg up in the cumulative scores. Therefore, as a control, it is useful to know whether the patterns we find hold up even if we disregard `C_modality` entirely.
-
-```{r sound_off}
-
-# we add C_nosound as a cumulative measure that excludes modality
-d <- d %>%
-  mutate(C_nosound = C_aspect + C_length + C_irregular + C_magnitude)
-
-# recreate dp to include C_nosound
-tofactors <- paste(c("language|category|study|group",names(d[grep('C_',names(d))])),collapse = "|")
-dp <- d
-dp[,grep(tofactors,names(dp))] <- lapply(dp[,grep(tofactors,names(dp))], as.factor)
-
-
-d %>%
-  group_by(C_nosound) %>%
-  summarise(n=n(),score=mean.na(score))
-
-ggplot(data=dp, aes(x=C_nosound,y=score_z,colour=C_nosound)) +
-  theme_tufte() + theme(legend.position="none") +
-  labs(title="Guessability (both studies) by cumulative iconicity",
-       x="cumulative iconicity (excluding modality)",
-       y=expression('guessability ('~italic(z)~')')) +
-  geom_half_boxplot() +
-  geom_half_point() +
-  scale_fill_viridis(option="plasma",discrete=T,begin=0.3,end=0.9) +
-  scale_colour_viridis(option="plasma",discrete=T,begin=0.3,end=0.9) +
-  NULL
-
-```
-
-
-There is an r=0.26 correlation between logodds and C_sound across the studies. This is present in both studies.
-
-```{r congruency_stats_nosound_1}
-
-# simplest thing we can do is a correlation. 
-
-cor.test(d$logodds,d$C_nosound,method="pearson")
-
-d.Collabra <- d %>% filter(study == "Collabra")
-d.Language <- d %>% filter(study == "Language")
-cor.test(d.Collabra$logodds,d.Collabra$C_nosound,method="pearson")
-cor.test(d.Language$logodds,d.Language$C_nosound,method="pearson")
-
-p0 <- cor.test(d$logodds,d$C_nosound,method="pearson")$p.value
-p1 <- cor.test(d.Collabra$logodds,d.Collabra$C_nosound,method="pearson")$p.value
-p2 <- cor.test(d.Language$logodds,d.Language$C_nosound,method="pearson")$p.value
-p.adjust(c(p0,p1,p2),method="bonferroni")
-
-
-```
-
-The mixed effects models look much the same.
-A null model `m0` predices logodds by paper, controlling for item-level differences. A model `m1` with cumulative congruence as an additional fixed effect fares significantly better.
-
-For the fixed effects, m1 lists a 0.205 improvement in logodds for `C_nosound`. According to my interpretation this means that every added iconic feature leads to an ~8% boost in proportion correct. The lower baseline for the Language set is estimated as -0.513, which translates to a 19.5% guessability penalty.
-
-```{r congruency_stats_nosound2}
-
-m0 <- lmer(logodds ~ study + (1|ideophone), data=d)
-m1 <- lmer(logodds ~ study + C_nosound + (1|ideophone), data=d)
-anova(m0,m1)
-
-fixef(m1)
-
-probitlink(0.205,inverse=T)-0.5
-probitlink(-0.513,inverse=T)-0.5
-
-
-
-```
-
-
-## Exploring coding sensitivity and congruency blind spots
-What are we not capturing? Our coding and congruency measures are designed to be reproducible and human-codable. They are not exhaustive, and there may well be aspects that we are missing. Some ideophones may also be guessed relatively high for reasons other than form-meaning analogies (e.g., they had a very unattractive foil or presented unforeseen confounds). Here we explore the congruency data to find highly guessed ideophones that our coding did not (yet) identify as having iconic mappings. We also look at the other end: ideophones coded as having an iconic mapping but not doing well in the binary forced choice task. 
-
-If we sort by score most of the blindspots are from the Collabra study, which had a less forbidding design and therefore a higher baseline score. 
-
-```{r congruency_blindspots}
-
-
-d %>%
-  filter(C_cumulative == 0, score_z > 0.5) %>%
-  dplyr::select(filename,ideophone,meaning,meaning_NL,language,logodds,score) %>%
-  arrange(-score) %>% ungroup %>%
-  slice(1:10)
-
-```
-
-Coding sensitivity varies by feature, in part because not all are equally frequent. For instance, `C_weight_tone` captures ideophones that have high tone/intonation and small/light meaning or conversely low tone/intonation and big/heavy meaning. 
-
-```{r coding_sensitivity}
-
-icoplot("C_weight_tone")
-
-d %>%
-  group_by(language) %>%
-  filter(C_weight_tone == 1) %>%
-  summarise(n=n(),score=mean.na(score),rating=mean.na(rating))
-
-d %>%
-  group_by(language) %>%
-  filter(C_weight_tone == 1) %>%
-  View()
-
-
-```
-
-### Variation by language
-
-Although we have focused on cross-linguistically attested features, features may also vary by language. For instance, irregularity may work somewhat in Japanese, Korean and Ewe, the 4 Semai ideophones scored as showing this mapping have a mean accuracy score of 0.45, dragging down the average. It looks like partial reduplication really has a different function in Semai, and one that is not captured by our coding scheme.
-
-
-```{r coding_by_language}
-
-d %>%
-  group_by(language) %>%
-  filter(C_irregular == 1) %>%
-  summarise(n=n(),score=mean.na(score),rating=mean.na(rating),C=mean.na(C_cumulative))
-
-d %>%
-  group_by(language) %>%
-  filter(C_irregular == 1) %>%
-  dplyr::select(ideophone,meaning,language,category,score,rating,C_irregular,C_cumulative) %>%
-  View()
-
-
-mS0 <- lmer(logodds ~ study + (1|ideophone), data=d)
-mS1 <- lmer(logodds ~ study + language + (1|ideophone), data=d) # fails to converge
-mS2 <- lmer(logodds ~ study + C_aspect + C_modality + C_length + (1|ideophone), data=d)
-mS3 <- lmer(logodds ~ study + C_aspect + C_modality + C_length + language + (1|ideophone), data=d) 
-
-anova(mS2,mS3)
-
-fixef(mS3)
-
-```
-
-
-
-One might conclude from that language would be a relevant factor to take into account in the statistical models. But its influence is not very large. If we add it to the most complete model above, the fit is marginally improved, but the difference is not of the same magnitude as other factors. Also, language is partly confounded with quality of recordings, which are lab recordings for Ewe, Korean, Japanese and field recordings for Siwu and Semai. We can dummy code this as a new variable to check its effect.
-
-```{r coding_by_audio}
-
-d <- d %>%
-  mutate(audio = ifelse(language %in% c("Siwu","Semai"),"field","lab"))
-
-d %>%
-  group_by(audio) %>%
-  summarise(n=n(),score=mean.na(score),rating=mean.na(rating))
-
-ggplot(data=d, aes(x=audio,y=score,fill=C_cumulative,colour=C_cumulative)) +
-  theme_tufte() + ylim(0,1) + theme(legend.position="none") + 
-  labs(title="Guessability by audio version",
-       x="audio",
-       y="guessability (% correct)") +
-  geom_beeswarm(cex=2.5) +
-  NULL
-
-ggplot(data=d, aes(x=language,y=score,fill=C_cumulative,colour=C_cumulative)) +
-  theme_tufte() + ylim(0,1) + theme(legend.position="none") + 
-  labs(title="Guessability by audio version",
-       x="language",
-       y="guessability (% correct)") +
-  geom_beeswarm(cex=2.5) +
-  NULL
-
-# ratings look like they have a distinctly non-normal distribution for field recordings, with a large bulge below 3 (= middle)
-ggplot(data=d, aes(x=audio,y=rating,fill=C_cumulative,colour=C_cumulative)) +
-  theme_tufte() +  ylim(1,5) + theme(legend.position="none") + 
-  labs(title="Iconicity ratings for 239 ideophones",
-       y="mean iconicity rating") +
-  geom_beeswarm(cex=2.5) +
-  NULL
-
-# and indeed the bulge isn't really there for any of the non-field languages (and arguably mostly attributable to the Semai recordings)
-ggplot(data=d, aes(x=language,y=rating,fill=C_cumulative,colour=C_cumulative)) +
-  theme_tufte() +  ylim(1,5) + theme(legend.position="none") + 
-  labs(title="Iconicity ratings for 239 ideophones",
-       x="language",
-       y="mean iconicity rating") +
-  geom_beeswarm(cex=2.5) +
-  NULL
-
-
-```
-
-
-```{r congruency_underperformers}
-# the reverse is also interesting: which ideophones were coded as having iconic mappings yet were not guessed greatly?
-
-d %>%
-  filter(C_cumulative > 0, logodds < -0.25) %>%
-  dplyr::select(filename,ideophone,meaning,meaning_NL,C_cumulative,language,logodds,score) %>%
-  arrange(score) %>% ungroup() %>%
-  slice(1:10)
 
 
 ```
