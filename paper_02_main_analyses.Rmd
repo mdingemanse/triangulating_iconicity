@@ -82,6 +82,8 @@ d.ratings.full <- read_xlsx("data/ideophones_rated.xlsx") |>
 d.ratings.full <- left_join(d.ratings.full,
                   ideophones_filename,by="filename",copy=TRUE)
 
+write.csv(d.ratings.full, file="data/ideophones_rated.csv")
+
 
 ```
 
