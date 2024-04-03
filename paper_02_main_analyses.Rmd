@@ -7,7 +7,7 @@ editor_options:
   chunk_output_type: console
 ---
   
-  ```{r global_options, include=FALSE}
+```{r global_options, include=FALSE}
 knitr::opts_chunk$set(fig.width=8, fig.height=6, fig.path='figures_md/',
                       echo=TRUE, warning=FALSE, message=FALSE)
 
@@ -29,8 +29,6 @@ lapply(list.of.packages, require, character.only=T)
 mean.na <- function(x) mean(x, na.rm = T)
 sd.na <- function(x) sd(x, na.rm = T)
 
-# custom functions
-source("TI_functions.R")
 ```
 
 ## Data
@@ -39,26 +37,26 @@ Here we load the ground truth version of the coded data and add the independentl
 ```{r data}
 
 # get consensus coding data
-d = read_excel("data/ideophones_coded.xlsx") %>% arrange(filename)
+d = read_excel("data/ideophones_coded.xlsx") |> arrange(filename)
 
 # add guessability scores from the Collabra and Language studies.
 
-d.scores = read_excel("data/ideophones_guessability.xlsx") %>%
+d.scores = read_excel("data/ideophones_guessability.xlsx") |>
   dplyr::select(-category)
 d <- left_join(d,d.scores,by=c("ideophone","language","study" = "paper"))
 
 # add logodds (for when we run stats: it's more sensible to predict against logodds than raw proportion correct)
-d <- d %>%
-  group_by(study) %>%
+d <- d |>
+  group_by(study) |>
   mutate(logodds = probitlink(score))
 
 # add Z score to make scores more comparable in plots across studies
-d <- d %>%
-  group_by(study) %>%
+d <- d |>
+  group_by(study) |>
   mutate(score_z = scale(score,center=T,scale=T))
 
 # get ratings data
-d.ratings <- read_xlsx("data/ideophones_rated_means.xlsx") %>%
+d.ratings <- read_xlsx("data/ideophones_rated_means.xlsx") |>
   dplyr::select(-category,-list,-item)
 d <- left_join(d,d.ratings,by=c("filename","study","language")) |>
   mutate(filename = gsub("_org","",filename))
@@ -70,16 +68,11 @@ d$rating_z <- scale(d$rating,center=T,scale=T)
 write.csv(d,file="data/ideophones_coded_guessed_rated.csv",fileEncoding = "UTF-8")
 write_xlsx(d,path="data/ideophones_coded_guessed_rated.xlsx")
 
-# also write a simplified copy for easy inspection in Excel (helpful when writing)
-d %>%
-  dplyr::select(ideophone,meaning,language,category,meaning_NL,study,score,rating,C_aspect,C_magnitude,C_modality,C_length,C_irregular,C_cumulative) %>%
-  write_xlsx(path="data/ideophones_coded_guessed_rated_simplified.xlsx")
-
+# load and merge the full ratings data for some of the reporting in the paper
 ideophones_filename <- d |> ungroup() |> select(ideophone,filename) |>
   mutate(filename = str_to_lower(filename))
 
-# load the full ratings data for some of the reporting in the paper
-d.ratings.full <- read_xlsx("data\\ideophones_rated.xlsx") |>
+d.ratings.full <- read_xlsx("data/ideophones_rated.xlsx") |>
   mutate(list = gsub(".*([A-Z])$", "\\1",item)) |>
   mutate(filename = gsub("^(.*)_.*$", "\\1", str_to_lower(item))) |>
   mutate(filename = gsub("Coll_","", filename)) |>
@@ -93,26 +86,25 @@ d.ratings.full <- left_join(d.ratings.full,
 ```
 
 ## Figures
-Here we generate some descriptive stats and create the main figures for the paper.
+Here we generate some descriptive stats and create the main figures for the paper. Note that Figures 1 and 2 in the paper are illustrative and their final versions are not generated in R.
 
 ```{r descriptive_stats}
 
-d %>%
-  group_by(study) %>%
+d |>
+  group_by(study) |>
   dplyr::summarize(max=max(score),min=min(score),mean=mean.na(score))
 
 ```
 
-### Figure: Overview panel
-The overview panel is created separately but we use the data from the guessability studies as a canvas.
+### Figure 2: Overview panel
+The overview of the triangulation method is created separately in CorelDraw but we use the data from the guessability studies as a canvas.
 
 ```{r figures_paper_guessability_canvas}
 
-# make a copy dp of the data in which we convert some measures to factors for easy plotting & facetting
+# make a copy dp of the data in which we convert some measures to factors for easy plotting & faceting
 tofactors <- paste(c("language|category|study|group",names(d[grep('C_',names(d))])),collapse = "|")
 dp <- d
 dp[,grep(tofactors,names(dp))] <- lapply(dp[,grep(tofactors,names(dp))], as.factor)
-
 
 # blank plot can be useful as a canvas 
 ggplot(data=dp, aes(x=study,y=score)) +
@@ -120,36 +112,7 @@ ggplot(data=dp, aes(x=study,y=score)) +
   stat_summary(fun=median,geom="point",size=8,shape=21,stroke=1,fill="white",colour="#c9c9c9") +
   geom_dotplot(colour="white",fill="black",stackgroups=T,dotsize=1.5,binwidth=0.01,binaxis="y",stackdir = "center")
 
-ggsave("figures\\fig2-guessability-blank.pdf",height=5,width=7.5)
-
-
-```
-
-Let's plot the guessability by study and iconicity rating
-
-```{r figures_paper_guessability_rating}
-
-# panel A: scores by study and cumulative iconicity
-pA <- ggplot(data=dp, aes(x=study,y=score,fill=study,colour=study)) +
-  theme_tufte() + ylim(0,1) + theme(legend.position="none") + 
-  labs(title="Guessability by study",
-       x="study",
-       y="guessability (% correct)") +
-  geom_dotplot(stackgroups=T,dotsize=1.5,binwidth=0.01,binaxis="y",stackdir = "center") +
-  NULL
-
-pB <- ggplot(data=dp, aes(x=rating,y=score,fill=study,colour=study)) +
-  theme_tufte() + ylim(0,1) + theme(legend.position="none") +
-  labs(title="Guessability (both studies) by iconicity rating",
-       x="iconicity rating",
-       y="") +
-  geom_point(size=2.0,shape=21) +
-  geom_smooth(method="lm") +
-  NULL
-
-plot_grid(pA,pB,labels=c("A","B"),label_size=14,rel_widths = c(1.4,2))
-#ggsave("figures\\paper_panelAB_guessing_rating.png",height=5,width=9)
-
+ggsave("figures/fig2-guessability-blank.pdf",height=5,width=7.5)
 
 
 ```
@@ -182,7 +145,7 @@ pB <- ggplot(data=dp, aes(x=C_cumulative,y=score_z,colour=C_cumulative)) +
   NULL
 
 plot_grid(pA,pB,labels=c("A","B"),label_size=14,rel_widths = c(1.4,2))
-ggsave("figures\\fig3-panelAB.png",height=4,width=9,bg="white")
+ggsave("figures/fig3-panelAB.png",height=4,width=9,bg="white")
 
 
 ```
@@ -192,7 +155,6 @@ ggsave("figures\\fig3-panelAB.png",height=4,width=9,bg="white")
 Panel figure for Study B providing a view of ratings per study and per semantic domain.
 
 ```{r fig4_panel}
-
 
 #panel A: ratings by study
 pA <- d |>  ggplot(aes(x=score_z,y=rating)) +   
@@ -292,22 +254,20 @@ The simplest thing to do is a correlation.
 
 ```{r congruency_stats_1}
 
-# simplest thing we can do is a correlation. 
+# Pearson correlation for both of the studies
+d.Collabra <- d |> filter(study == "Collabra")
+d.Language <- d |> filter(study == "Language")
+correlation.Collabra <- cor.test(d.Collabra$logodds,d.Collabra$C_cumulative,method="pearson")
+correlation.Language <- cor.test(d.Language$logodds,d.Language$C_cumulative,method="pearson")
 
-cor.test(d$logodds,d$C_cumulative,method="pearson")
-
-d.Collabra <- d %>% filter(study == "Collabra")
-d.Language <- d %>% filter(study == "Language")
-cor.test(d.Collabra$logodds,d.Collabra$C_cumulative,method="pearson")
-cor.test(d.Language$logodds,d.Language$C_cumulative,method="pearson")
-
-p0 <- cor.test(d$logodds,d$C_cumulative,method="pearson")$p.value
-p1 <- cor.test(d.Collabra$logodds,d.Collabra$C_cumulative,method="pearson")$p.value
-p2 <- cor.test(d.Language$logodds,d.Language$C_cumulative,method="pearson")$p.value
-p.adjust(c(p0,p1,p2),method="bonferroni")
-pvalues <-p.adjust(c(p0,p1,p2),method="bonferroni")  
+# Bonferroni-correcting the p values for multiple comparisons
+p1 <- correlation.Collabra$p.value
+p2 <- correlation.Language$p.value
+pvalues <-p.adjust(c(p1,p2),method="bonferroni")  
 
 ```
+
+The correlation is found in the Collabra study (Pearson’s r = `r round(correlation.Collabra$estimate,2)`, p = `r pvalues[1]`) as well as in the Language study (Pearson’s r = `r round(correlation.Language$estimate,2)`, p `r pvalues[2]`, p-values Bonferroni-corrected for multiple comparisons).
 
 But it's probably more useful to predict logodds score on the basis of what we know about paper (= a proxy for method) and the main measures of form-meaning congruence. For this we can use logistic regression.
 
@@ -381,18 +341,18 @@ Our prediction is that Sound and Motion ideophones should show more structural c
 
 ```{r descriptive_semantic_domains}
 
-dp.categories <- d %>%
-  filter(category %notin% "Other") %>%
-  mutate(category = forcats::fct_reorder(category, -C_cumulative, .fun='mean')) %>%
-  mutate(category_binary = ifelse(category %in% c("Sound","Motion"),"SoundMotion","ColorvisualShapeTexture")) %>%
-  mutate(C_nosound = C_aspect + C_length + C_irregular + C_magnitude) %>% # for control analysis
+dp.categories <- d |>
+  filter(category %notin% "Other") |>
+  mutate(category = forcats::fct_reorder(category, -C_cumulative, .fun='mean')) |>
+  mutate(category_binary = ifelse(category %in% c("Sound","Motion"),"SoundMotion","ColorvisualShapeTexture")) |>
+  mutate(C_nosound = C_aspect + C_length + C_irregular + C_magnitude) |> # for control analysis
   mutate(C_strongestpredictors = C_aspect + C_length + C_modality ) # for another control analysis
 
 
 # mean of C_cumuluative
 dp.categories |>
   group_by(category) |>
-  dplyr::summarise(n=n(),mean_C=mean.na(C_cumulative),mean_rating=mean.na(rating),mean_score=mean.na(score)) %>%
+  dplyr::summarise(n=n(),mean_C=mean.na(C_cumulative),mean_rating=mean.na(rating),mean_score=mean.na(score)) |>
   arrange(-mean_C)
 
 # mean of only the strongest predictors
@@ -404,7 +364,7 @@ dp.categories |>
 # binary comparison
 dp.categories |>
   ungroup() |>
-  group_by(category_binary) %>%
+  group_by(category_binary) |>
   dplyr::summarise(n=n(),mean_C=mean.na(C_cumulative),mean_rating=mean.na(rating),mean_score=mean.na(score)) |>
   arrange(-mean_C)
 
@@ -442,9 +402,9 @@ d.ratings.full |>
   dplyr::summarise(n=n(),mean=mean.na(rating),sd=sd.na(rating))
 
 # get means and standard deviations across all ideophones and for each language and category
-mean(d.allratings$rating)
-  # 2.948339
-sd(d.allratings$rating)
+mean(d.ratings.full$rating)
+
+sd(d.ratings.full$rating)
 
 examples <- c("kpa","boo boo","zuratto", "plɒ̃s")
 d.ratings.full |>
@@ -478,39 +438,34 @@ d.ratings.full |>
 ```
 
 
-
-```{r linear_regressions}
-
-```
-
-
 How do iconicity ratings relate to structural correspondences?
 
-A simple correlation test suggests a positive relation between iconicity rating and cumulative iconicity. As above, we can go a bit deeper by using mixed effects modelling. We expect a smaller effect of study on the ratings, as the difference in design in terms of selection of foils falls away.
+```{r coding_ratings_correlation}
+correlation_coding_ratings <- cor.test(d$rating_z,d$C_cumulative,method="pearson")
+```
+
+A simple correlation test suggests a positive relation between iconicity rating and cumulative iconicity: Pearson's *r* = `r round(correlation_coding_ratings$estimate,2)`, p = `r correlation_coding_ratings$p.value`. 
+
+As above, we can go a bit deeper by using mixed effects modelling. We expect a smaller effect of study on the ratings, as the difference in design in terms of selection of foils falls away.
 
 ```{r coding_ratings_lme}
-
-# simple correlation test
-cor.test(d$rating_z,d$C_cumulative,method="pearson")
 
 # lme
 m0 <- lmer(rating ~ study + (1|ideophone), data=d)
 m1 <- lmer(rating ~ study + C_cumulative + (1|ideophone), data=d)
 anova(m0,m1)
 
+m0m1.chisquare <- round(anova(m0,m1)$Chisq[2],2)
+m0m1.pvalue <- anova(m0,m1)$"Pr(>Chisq)"[2]
+m0m1.loglikdiff <- abs(anova(m0,m1)$logLik[1] - anova(m0,m1)$logLik[2])
+
 fixef(m1)
 
 ```
 
-As above, we can assess the relative weight of different features using model comparison. We build models by adding the congruency measures in rank order of attestation in the coded data. Doing this we find that C_aspect, C_modality and C_length are responsible for the bulk of the variance. Compared to the null model that only represents the baseline difference between studies, model `m8` fares significantly better (log likelihood difference = 21.3).
+We find that a model with cumulative iconicity as an additional fixed effect achieves a fit that is significantly better than a null model without it (χ2(1) = `r m0m1.chisquare`, p = `r m0m1.pvalue`, log likelihood difference `r m0m1.loglikdiff`). The fixed effect of cumulative iconicity is estimated at `r fixef(m1)[["C_cumulative"]]`. 
 
-The model estimates given in the output of `fixef(m8)` represent the contribution of a given fixed effect while controlling for others, but they are NOT additive (i.e. can't be summed to arrive at the effect of `C_cumulative`).
-
-* `C_aspect`: 0.181 logodds (+7% boost)
-* `C_modality`: 0.177 logodds (+7% boost)
-* `C_length`: 0.443 logodds (+17% boost)
-
-```{r congruency_stats_3}
+```{r ratings_stats_3}
 
 m3 <- lmer(rating ~ study + C_aspect + (1|ideophone), data=d)
 m4 <- lmer(rating ~ study + C_aspect + C_magnitude + (1|ideophone), data=d)
@@ -528,9 +483,25 @@ anova(m6,m7) # irregular doesn't additionally help
 anova(m5,m8) # aspect + modality + length is where it's at
 # so m8 is the best performing most complex model
 anova(m0,m8)
-summary(m8)
+
+m0m8.chisquare <- round(anova(m0,m8)$Chisq[2],2)
+m0m8.pvalue <- anova(m0,m8)$"Pr(>Chisq)"[2]
+m0m8.loglikdiff <- abs(anova(m0,m8)$logLik[1] - anova(m0,m8)$logLik[2])
+
+m8.estimates <- summary(m8)[["coefficients"]][,1]
+
 fixef(m8)
 
 
 
 ```
+
+We can also assess the relative weight of different features using model comparison. We build models by adding the congruency measures in rank order of attestation in the coded data. Doing this we find that C_aspect, C_modality and C_length are responsible for the bulk of the variance. Compared to the null model that only represents the baseline difference between studies, model `m8` fares significantly better (Chisquare = `r m0m8.chisquare`, p = `r m0m8.pvalue`, log likelihood difference = `r m0m8.loglikdiff`).
+
+
+The model estimates given in the output of `fixef(m8)` represent the contribution of a given fixed effect while controlling for others, but they are NOT additive (i.e. they cannot be summed to arrive at the effect of `C_cumulative`).
+
+* `C_length`: `r round(m8.estimates["C_length"],2)`
+* `C_modality`: `r round(m8.estimates["C_modality"],2)`
+* `C_aspect`: `r round(m8.estimates["C_aspect"],2)`
+
