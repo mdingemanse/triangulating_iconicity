@@ -1,6 +1,6 @@
-Triangulating iconicity: Coding, consistency & calibration
+Coding, consistency & calibration
 ================
-Mark Dingemanse & Stella Punselie
+\[anonymized for review\]
 Updated 2024-04-03
 
 ## Coding consistency
@@ -13,8 +13,8 @@ consistency, and recording coding/recoding decisions.
 ``` r
 # Packages
 list.of.packages <- c("tidyverse","readxl","writexl","irr")
-new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-if(length(new.packages)) install.packages(new.packages)
+# new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+# if(length(new.packages)) install.packages(new.packages)
 lapply(list.of.packages, require, character.only=T)
 
 # useful functions
@@ -29,25 +29,25 @@ Let’s first load the original data and generate derivative XLS files to
 aid in the calibration.
 
 ``` r
-d1 = read_excel("data/ideophones_coded_MD_original.xlsx") %>% arrange(filename)
-d2 = read_excel("data/ideophones_coded_SP_original.xlsx") %>% arrange(filename)
+d1 = read_excel("data/ideophones_coded_MD_original.xlsx") |> arrange(filename)
+d2 = read_excel("data/ideophones_coded_SP_original.xlsx") |> arrange(filename)
 d2 <- d2[,-c(1:7)] # remove non-unique fields except filename prior to merge
 
 d <- merge(d1,d2,by="filename")
 
-d.F <- d %>%
-  dplyr::select(c("filename","ideophone"),starts_with("F_")) %>%
+d.F <- d |>
+  dplyr::select(c("filename","ideophone"),starts_with("F_")) |>
   dplyr::select(-starts_with("F_notes"),everything()) # put note fields at end
 #write_xlsx(d.F,path="data\\ideophones_F_consistency.xlsx")
 
-d.M <- d %>%
-  dplyr::select(c("filename","ideophone"),starts_with("M_")) %>%
+d.M <- d |>
+  dplyr::select(c("filename","ideophone"),starts_with("M_")) |>
   dplyr::select(-starts_with("M_notes"),everything()) # put note fields at end
 #write_xlsx(d.M,path="data\\ideophones_M_consistency.xlsx")
 
 # function to get the names of coding categories (note: this presupposes there is a coder _MD, change as needed)
 get_coding_categories <- function(data) {
-  coder_1_names <- data %>% dplyr::select(ends_with("_MD")) %>% names()
+  coder_1_names <- data |> dplyr::select(ends_with("_MD")) |> names()
   gsub('MD','',coder_1_names)
 }
 ```
@@ -79,9 +79,9 @@ get_agree(d.F,cat='F_redup_')
 ``` r
 # get list of coding categories and create dataframes for the consistency values
 F_categories <- get_coding_categories(d.F)
-F_consistency <- as.data.frame(F_categories) %>% dplyr::rename(category = F_categories)
+F_consistency <- as.data.frame(F_categories) |> dplyr::rename(category = F_categories)
 M_categories <- get_coding_categories(d.M)
-M_consistency <- as.data.frame(M_categories) %>% dplyr::rename(category = M_categories)
+M_consistency <- as.data.frame(M_categories) |> dplyr::rename(category = M_categories)
 
 F_consistency$agree <- NA
 F_consistency$kappa <- NA
@@ -200,25 +200,25 @@ check whether we now indeed have a canonical, ground truth set of coded
 data.
 
 ``` r
-d1 = read_excel("data/ideophones_coded_MD.xlsx") %>% arrange(filename)
-d2 = read_excel("data/ideophones_coded_SP.xlsx") %>% arrange(filename)
+d1 = read_excel("data/ideophones_coded_MD.xlsx") |> arrange(filename)
+d2 = read_excel("data/ideophones_coded_SP.xlsx") |> arrange(filename)
 d2 <- d2[,-c(1:7)] # remove non-unique fields except filename prior to merge
 
 d <- merge(d1,d2,by="filename")
 
-d.F <- d %>%
-  dplyr::select(c("filename","ideophone","meaning","meaning_NL"),starts_with("F_")) %>%
+d.F <- d |>
+  dplyr::select(c("filename","ideophone","meaning","meaning_NL"),starts_with("F_")) |>
   dplyr::select(-starts_with("F_notes"),everything()) # put note fields at end
 
-d.M <- d %>%
-  dplyr::select(c("filename","ideophone","meaning","meaning_NL"),starts_with("M_")) %>%
+d.M <- d |>
+  dplyr::select(c("filename","ideophone","meaning","meaning_NL"),starts_with("M_")) |>
   dplyr::select(-starts_with("M_notes"),everything()) # put note fields at end
 
 # get list of coding categories and create dataframes for the consistency values
 F_categories <- get_coding_categories(d.F)
-F_consistency <- as.data.frame(F_categories) %>% dplyr::rename(category = F_categories)
+F_consistency <- as.data.frame(F_categories) |> dplyr::rename(category = F_categories)
 M_categories <- get_coding_categories(d.M)
-M_consistency <- as.data.frame(M_categories) %>% dplyr::rename(category = M_categories)
+M_consistency <- as.data.frame(M_categories) |> dplyr::rename(category = M_categories)
 
 F_consistency$agree <- NA
 F_consistency$kappa <- NA
@@ -248,13 +248,13 @@ informative purposes.
 
 ``` r
 inconsistent <- c('F_redup','F_monosyllabic','F_vowelquality','F_finallength')
-d.F.inconsistent <- d.F %>%
-  dplyr::select(filename,ideophone,meaning,meaning_NL,matches(paste(inconsistent,collapse="|"))) %>%
+d.F.inconsistent <- d.F |>
+  dplyr::select(filename,ideophone,meaning,meaning_NL,matches(paste(inconsistent,collapse="|"))) |>
   mutate(F_redup_C = ifelse(F_redup_MD == F_redup_SP,1,0),
          F_monosyllabic_C = ifelse(F_monosyllabic_MD == F_monosyllabic_SP,1,0),
          F_vowelquality_C = ifelse(F_vowelquality_MD == F_vowelquality_SP,1,0),
-         F_finallength_C = ifelse(F_finallength_MD == F_finallength_SP,1,0)) %>%
-  mutate(check = F_redup_C + F_monosyllabic_C + F_vowelquality_C + F_finallength_C) %>%
+         F_finallength_C = ifelse(F_finallength_MD == F_finallength_SP,1,0)) |>
+  mutate(check = F_redup_C + F_monosyllabic_C + F_vowelquality_C + F_finallength_C) |>
   filter(check < 4)
 d.F.inconsistent <- d.F.inconsistent[, order(names(d.F.inconsistent))]
 
@@ -269,12 +269,12 @@ analyses. We do this this by taking the (calibrated and revised) data
 from one coder.
 
 ``` r
-d.coded <- read_excel("data/ideophones_coded_SP.xlsx") %>% 
-  arrange(filename) %>%
+d.coded <- read_excel("data/ideophones_coded_SP.xlsx") |> 
+  arrange(filename) |>
   dplyr::select(-matches('notes'))
 names(d.coded) <- gsub('_SP','',names(d.coded))
 
-notes <- d %>% dplyr::select(filename,matches('notes'))
+notes <- d |> dplyr::select(filename,matches('notes'))
 
 d.coded <- left_join(d.coded,notes)
 ```
@@ -288,7 +288,7 @@ the coding scheme.
 # note that we overwrite the old d with the new consensus version here
 
 # using ifelse() statements that essentially say, if these conditions are true, use 1, otherwise 0
-d <- d.coded %>%
+d <- d.coded |>
   mutate(C_modality = ifelse(M_sound == 1,1,0),
          C_iterative = ifelse(F_redup == 1 & M_distribution == 1,1,0),
          C_irregular = ifelse(F_redupmod == 1 & M_irregular == 1,1,0),
@@ -303,9 +303,9 @@ d <- d.coded %>%
 # some mappings are mutually exclusive, so we combine them
 
 #sanity check: are they indeed mutually exclusive? these calls should come up empty
-d %>% 
-  mutate(C_aspect = C_iterative + C_punctual) %>%
-  dplyr::select(ideophone,meaning_NL,language,C_iterative,C_punctual,C_aspect) %>%
+d |> 
+  mutate(C_aspect = C_iterative + C_punctual) |>
+  dplyr::select(ideophone,meaning_NL,language,C_iterative,C_punctual,C_aspect) |>
   filter(C_aspect > 1)
 ```
 
@@ -314,9 +314,9 @@ d %>%
     ## #   C_iterative <dbl>, C_punctual <dbl>, C_aspect <dbl>
 
 ``` r
-d %>%
-  mutate(C_length = C_long + C_closure) %>%
-  dplyr::select(ideophone,meaning_NL,language,C_iterative,C_closure,C_length) %>%
+d |>
+  mutate(C_length = C_long + C_closure) |>
+  dplyr::select(ideophone,meaning_NL,language,C_iterative,C_closure,C_length) |>
   filter(C_length > 1)
 ```
 
@@ -325,7 +325,7 @@ d %>%
     ## #   C_iterative <dbl>, C_closure <dbl>, C_length <dbl>
 
 ``` r
-d <- d %>%
+d <- d |>
   mutate(C_aspect = C_iterative + C_punctual,
          C_length = C_long + C_closure)
 
@@ -333,7 +333,7 @@ d <- d %>%
 # C_weight_ subfeatures are linked to one and the same meaning feature M_weight so they are recombined into C_magnitude
 # (note: this may be subject to revision, as the subfeatures may not deserve equal weight)
 
-d <- d %>%
+d <- d |>
   mutate(C_weight = C_weight_voice + C_weight_vowel + C_weight_tone,
          C_magnitude = ifelse(C_weight == 0,0,1)) # i.e. a magnitude value that is 1 if any weight feature was congruent
 
@@ -342,8 +342,8 @@ d <- d %>%
 # any1 = 1 if an ideophone has at least 1 congruency feature of any type
 # atleast2 = if an ideophone has at least 2 congruency features of any type
 # ternary = simple way of conflating the (smaller) upper regions: 1=1, 2=2, >2 = 3
-d <- d %>%
-  mutate(C_cumulative = C_modality + C_aspect + C_length + C_irregular + C_magnitude) %>%
+d <- d |>
+  mutate(C_cumulative = C_modality + C_aspect + C_length + C_irregular + C_magnitude) |>
   mutate(C_any1 = ifelse(C_cumulative == 0,0,1),
          C_atleast2 = ifelse(C_cumulative > 1,1,0),
          C_ternary = ifelse(C_cumulative == 0,0,
