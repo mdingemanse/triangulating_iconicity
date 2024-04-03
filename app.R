@@ -80,7 +80,7 @@ ui <- fluidPage(
       
     ),
   ),
-  fluidRow(includeHTML("codingscheme.html"))
+  fluidRow(includeHTML("data/codingscheme.html"))
 )
 
 server <- function(input, output) {
