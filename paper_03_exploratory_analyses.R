@@ -83,9 +83,12 @@ cor.test(sound$score_z,sound$C_cumulative)
 cor.test(sound$rating_z,sound$C_cumulative)
 cor.test(motion$score_z,motion$C_cumulative)
 cor.test(motion$rating_z,motion$C_cumulative)
+cor.test(shape$score_z,shape$C_cumulative)
+cor.test(shape$rating_z,shape$C_cumulative)
+cor.test(texture$score_z,texture$C_cumulative)
+cor.test(texture$rating_z,texture$C_cumulative)
 cor.test(colour$score_z,colour$C_cumulative)
 cor.test(colour$rating_z,colour$C_cumulative)
-
 
 # Add info on ideophones of note here
 
