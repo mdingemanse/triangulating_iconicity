@@ -48,7 +48,7 @@ dat |>
   scale_colour_viridis(option="plasma")+
   theme_minimal()
 
-## Compute correlations
+## Compute correlations between guesses and ratings
 
 sound <- dat|>filter(category=="Sound")
 cor.test(sound$score_z,sound$rating_z)
@@ -77,7 +77,7 @@ d|>
                              ))|>
   write_tsv("data/mean_cumulative_iconicity_feats.tsv")
 
-# correlations
+# correlations between cumulative iconicity and ratings/guesses, by domain 
 
 cor.test(sound$score_z,sound$C_cumulative)
 cor.test(sound$rating_z,sound$C_cumulative)
