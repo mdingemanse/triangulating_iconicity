@@ -1,7 +1,6 @@
 Triangulating iconicity: Coding analysis
 ================
-Mark Dingemanse, Stella Punselie, Bonnie McLean
-Updated 2024-04-03
+[anonymised for review] Updated 2024-04-03
 
 Code notebook for a study of the relation between linguistically
 informed iconicity coding and experimentally collected guessability
