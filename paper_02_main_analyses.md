@@ -1,6 +1,7 @@
 Triangulating iconicity: Coding analysis
 ================
-[anonymised for review] Updated 2024-04-03
+\[anonymised for review\]
+Updated 2024-06-15
 
 Code notebook for a study of the relation between linguistically
 informed iconicity coding and experimentally collected guessability
@@ -10,7 +11,7 @@ scores.
 
 ``` r
 # Packages
-list.of.packages <- c("tidyverse","readxl","writexl","ggthemes","gghalves","ggbeeswarm","viridis","lme4","VGAM","cowplot")
+list.of.packages <- c("tidyverse","ggthemes","gghalves","ggbeeswarm","viridis","lme4","VGAM","cowplot")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 lapply(list.of.packages, require, character.only=T)
@@ -23,56 +24,13 @@ sd.na <- function(x) sd(x, na.rm = T)
 
 ## Data
 
-Here we load the ground truth version of the coded data and add the
-independently collected guessability scores from the 2016 Collabra and
-Language papers.
+Here we load the data. For earlier processing operations, see
+`paper_00_data_processing.R`.
 
 ``` r
-# get consensus coding data
-d = read_excel("data/ideophones_coded.xlsx") |> arrange(filename)
+d <- readr::read_csv("data/ideophones_coded_guessed_rated.csv")
 
-# add guessability scores from the Collabra and Language studies.
-
-d.scores = read_excel("data/ideophones_guessability.xlsx") |>
-  dplyr::select(-category)
-d <- left_join(d,d.scores,by=c("ideophone","language","study" = "paper"))
-
-# add logodds (for when we run stats: it's more sensible to predict against logodds than raw proportion correct)
-d <- d |>
-  group_by(study) |>
-  mutate(logodds = probitlink(score))
-
-# add Z score to make scores more comparable in plots across studies
-d <- d |>
-  group_by(study) |>
-  mutate(score_z = scale(score,center=T,scale=T))
-
-# get ratings data
-d.ratings <- read_xlsx("data/ideophones_rated_means.xlsx") |>
-  dplyr::select(-category,-list,-item)
-d <- left_join(d,d.ratings,by=c("filename","study","language")) |>
-  mutate(filename = gsub("_org","",filename))
-
-# add z score for ratings
-d$rating_z <- scale(d$rating,center=T,scale=T)
-
-# write this dataset as the fullest dataset
-write.csv(d,file="data/ideophones_coded_guessed_rated.csv",fileEncoding = "UTF-8")
-write_xlsx(d,path="data/ideophones_coded_guessed_rated.xlsx")
-
-# load and merge the full ratings data for some of the reporting in the paper
-ideophones_filename <- d |> ungroup() |> select(ideophone,filename) |>
-  mutate(filename = str_to_lower(filename))
-
-d.ratings.full <- read_xlsx("data/ideophones_rated.xlsx") |>
-  mutate(list = gsub(".*([A-Z])$", "\\1",item)) |>
-  mutate(filename = gsub("^(.*)_.*$", "\\1", str_to_lower(item))) |>
-  mutate(filename = gsub("Coll_","", filename)) |>
-  select(-item) 
-
-# match the data to ideophones for easier lookup
-d.ratings.full <- left_join(d.ratings.full,
-                  ideophones_filename,by="filename",copy=TRUE)
+d.ratings.full <- readr::read_csv("data/ideophones_rated.csv")
 ```
 
 ## Figures
@@ -150,6 +108,43 @@ plot_grid(pA,pB,labels=c("A","B"),label_size=14,rel_widths = c(1.4,2))
 
 ``` r
 ggsave("figures/fig3-panelAB.png",height=4,width=9,bg="white")
+
+# variant with shadow for use in paper
+# panel A: scores by study and cumulative iconicity
+pA <- ggplot(data=dp, aes(x=study,y=score,fill=C_cumulative,colour=C_cumulative)) +
+  theme_tufte() + ylim(0,1) + theme(legend.position="none") + 
+  labs(title="Guessability by study",
+       x="study",
+       y="guessability (% correct)") +
+  scale_fill_viridis(option="plasma",discrete=T,begin=0.3,end=0.9) +
+  scale_colour_viridis(option="plasma",discrete=T,begin=0.3,end=0.9) +
+  stat_summary(fun.y=median,geom="point",size=8,shape=21,stroke=1,fill="white") +
+  ggfx::with_shadow(
+    geom_dotplot(stackgroups=T,dotsize=1.5,binwidth=0.01,binaxis="y",stackdir = "center"),
+    sigma=0,
+    x_offset=1.4,
+    y_offset=1.4,
+    colour="black") +
+  NULL
+
+pB <- ggplot(data=dp, aes(x=C_cumulative,y=score_z,colour=C_cumulative)) +
+  theme_tufte() + theme(legend.position="none") +
+  labs(title="Guessability (both studies) by cumulative iconicity",
+       x="cumulative iconicity",
+       y=expression('guessability ('~italic(z)~')')) +
+  geom_half_boxplot() +
+  ggfx::with_shadow(
+    geom_half_point(),
+    sigma=0,
+    x_offset=1.4,
+    y_offset=1.4,
+    colour="black") +
+  scale_fill_viridis(option="plasma",discrete=T,begin=0.3,end=0.9) +
+  scale_colour_viridis(option="plasma",discrete=T,begin=0.3,end=0.9) +
+  NULL
+
+#plot_grid(pA,pB,labels=c("A","B"),label_size=14,rel_widths = c(1.4,2))
+#ggsave("figures/fig3-panelAB-shadow.png",height=4,width=9,bg="white")
 ```
 
 ### Figure 4: Ratings by study (A) and by semantic domain (B)
@@ -179,7 +174,7 @@ pB <- d |>
   theme_tufte(base_size=16) +
   geom_half_boxplot(aes(middle=mean(rating)),show.legend=F) +
   geom_half_point(show.legend=F) +
-  scale_colour_viridis_d(option="D",alpha=0.8) +
+  scale_colour_viridis_d(option="D") +
   xlab("category") + scale_x_discrete(labels = c("Sound","Motion","Shape", 
   "Texture","Colour/Visual"))
 
@@ -190,6 +185,42 @@ plot_grid(pA,pB,labels=c("A","B"),label_size=14,rel_widths = c(1.6,2))
 
 ``` r
 ggsave("figures/fig4-panel_ratings.png",height=4,width=9,bg="white")
+
+# variant with shadow for possible use in paper
+
+#panel A: ratings by study
+pA <- d |>  ggplot(aes(x=score_z,y=rating)) +   
+  theme_tufte(base_size = 16) +
+  theme(legend.position = c(0.2,0.9),
+        legend.title = element_blank()) +
+  scale_fill_manual(values=c("white","black")) +
+  geom_point(aes(fill=study),
+             position="jitter",
+             shape=21,
+             colour="black") +
+  geom_smooth(method=loess,colour="black",alpha=0.5) +
+  xlab("guessability (z)") + ylab("rating") +
+  NULL
+
+#panel B: ratings by semantic domain
+pB <- d |>
+  filter(category != "Other") |>
+  ggplot(aes(x=reorder(category,-rating),y=rating,color=category)) +
+  theme_tufte(base_size=16) +
+  geom_half_boxplot(aes(middle=mean(rating)),show.legend=F) +
+  ggfx::with_shadow(
+    geom_half_point(show.legend=F),
+    sigma=0,
+    x_offset=1.4,
+    y_offset=1.4,
+    colour="black"
+    ) +
+  scale_colour_viridis_d(option="D") +
+  xlab("category") + scale_x_discrete(labels = c("Sound","Motion","Shape", 
+  "Texture","Colour/Visual"))
+
+#plot_grid(pA,pB,labels=c("A","B"),label_size=14,rel_widths = c(1.6,2))
+#ggsave("figures/fig4-panel_ratings-shadow.png",height=4,width=9,bg="white")
 
 
 # a correlation test shows a Pearson correlation of .57 between iconicity rating
@@ -240,11 +271,15 @@ d |>
     ## 8 ton ton         Japanese     1        4.41  0.95
     ## 9 ɟtoonɟtoonɟtoon Semai        1        3.74  0.45
 
-### Figure 5: Ratings and cumulative iconicity
+### Figure 6: Ratings and cumulative iconicity
 
 ``` r
 # panel A: ratings by study and cumulative iconicity
-pA <- ggplot(data=dp, aes(x="",y=rating,fill=C_cumulative,colour=C_cumulative)) +
+pA <- ggplot(data=dp, 
+             aes(x="",
+                 y=rating,
+                 colour=C_cumulative,
+                 fill=C_cumulative)) +
   theme_tufte() +  ylim(1,5) + theme(legend.position="none") + 
   labs(title="Iconicity ratings for 239 ideophones",
        x="all ideophones",
@@ -254,7 +289,11 @@ pA <- ggplot(data=dp, aes(x="",y=rating,fill=C_cumulative,colour=C_cumulative)) 
   geom_beeswarm(cex=2.5) +
   NULL
 
-pB <- ggplot(data=dp, aes(x=C_cumulative,y=rating,colour=C_cumulative)) +
+pB <- ggplot(data=dp, 
+             aes(x=C_cumulative,
+                 y=rating,
+                 colour=C_cumulative,
+                 fill=C_cumulative)) +
   theme_tufte() +  ylim(1,5) + theme(legend.position="none") +
   labs(title="... by independently coded structural correspondences",
        x="cumulative iconicity",
@@ -272,6 +311,101 @@ plot_grid(pA,pB,labels=c("A","B"),label_size=14,rel_widths = c(1.4,2))
 
 ``` r
 ggsave("figures/fig6-panelAB_ratings.png",height=5,width=9,bg="white")
+```
+
+R1 asks for a variant of this figure where the dots have black outline,
+to make the most yellow dots more easily visible. A second variant with
+subtle dropshadow may be even better.
+
+``` r
+pA <- ggplot(data=dp, 
+             aes(x="",
+                 y=rating,
+                 colour=C_cumulative,
+                 fill=C_cumulative)) +
+  theme_tufte() +  ylim(1,5) + theme(legend.position="none") + 
+  labs(title="Iconicity ratings for 239 ideophones",
+       x="all ideophones",
+       y="mean iconicity rating") +
+  scale_fill_viridis(option="plasma",discrete=T,begin=0.3,end=0.9) +
+  scale_colour_viridis(option="plasma",discrete=T,begin=0.3,end=0.9) +
+  geom_beeswarm(cex=2.5,
+                shape=21,
+                colour="black") +
+  NULL
+
+pB <- ggplot(data=dp, 
+             aes(x=C_cumulative,
+                 y=rating,
+#                 colour=C_cumulative,
+                 fill=C_cumulative)) +
+  theme_tufte() +  ylim(1,5) + theme(legend.position="none") +
+  labs(title="... by independently coded structural correspondences",
+       x="cumulative iconicity",
+       y="mean iconicity rating") +
+  geom_half_boxplot() +
+  geom_half_point(shape=21,colour="black") +
+  scale_fill_viridis(option="plasma",discrete=T,begin=0.3,end=0.9) +
+  scale_colour_viridis(option="plasma",discrete=T,begin=0.3,end=0.9) +
+  NULL
+
+plot_grid(pA,pB,labels=c("A","B"),label_size=14,rel_widths = c(1.4,2))
+```
+
+![](figures_md/R1_request-1.png)<!-- -->
+
+``` r
+ggsave("figures/fig6-panelAB_ratings_variant1.png",height=5,width=9,bg="white")
+
+
+# what about a drop shadow?
+
+pA <- ggplot(data=dp, 
+             aes(x="",
+                 y=rating,
+                 colour=C_cumulative,
+                 fill=C_cumulative)) +
+  theme_tufte() +  ylim(1,5) + theme(legend.position="none") + 
+  labs(title="Iconicity ratings for 239 ideophones",
+       x="all ideophones",
+       y="mean iconicity rating") +
+  scale_fill_viridis(option="plasma",discrete=T,begin=0.3,end=0.9) +
+  scale_colour_viridis(option="plasma",discrete=T,begin=0.3,end=0.9) +
+  ggfx::with_shadow(
+    geom_beeswarm(cex=2.5),
+    sigma=0,
+    x_offset=1.4,
+    y_offset=1.4,
+    colour="black"
+  ) +
+  NULL
+
+pB <- ggplot(data=dp, 
+             aes(x=C_cumulative,
+                 y=rating)) +
+  theme_tufte() +  ylim(1,5) + theme(legend.position="none") +
+  labs(title="... by independently coded structural correspondences",
+       x="cumulative iconicity",
+       y="mean iconicity rating") +
+  geom_half_boxplot(aes(colour=C_cumulative)) +
+  ggfx::with_shadow(
+    geom_half_point(aes(colour=C_cumulative,fill=C_cumulative),
+                    shape=21),
+    sigma=0,
+    x_offset=1.4,
+    y_offset=1.4,
+    colour="black") +
+  scale_fill_viridis(option="plasma",discrete=T,begin=0.3,end=0.9) +
+  scale_colour_viridis(option="plasma",discrete=T,begin=0.3,end=0.9) +
+  NULL
+
+plot_grid(pA,pB,labels=c("A","B"),label_size=14,rel_widths = c(1.4,2))
+```
+
+![](figures_md/R1_request-2.png)<!-- -->
+
+``` r
+ggsave("figures/fig6-panelAB_ratings_variant2.png",height=5,width=9,bg="white")
 ```
 
 ## Numbers
