@@ -7,8 +7,9 @@ Open data, analyses & supplementary materials for a paper on the relation betwee
 ## Files
 
 Methods and results:
+* An R script for data processing: [paper_00_data_processing.R](paper_00_data_processing.R)
 * A code notebook recording the coding consistency procedure: [rendered for github](paper_01_consistency.md), [.Rmd source](paper_01_consistency.Rmd)
-* A code notebook recording the visual and statistical analyses: [rendered .md](paper_02_main_analyses.md), [.Rmd source](paper_02_main_analyses.Rmd)
+* A code notebook recording the visual and statistical analyses: [rendered for github](paper_02_main_analyses.md), [.Rmd source](paper_02_main_analyses.Rmd)
 * A code notebook recording further exploratory analyses ([.R source](paper_03_exploratory_analyses.R))
 * A [shiny app](https://bonnie-mclean.shinyapps.io/triangulatingiconicity/) to explore the dataset ([R source](app.R))
 
