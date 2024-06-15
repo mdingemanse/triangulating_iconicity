@@ -1,6 +1,6 @@
 # Triangulating iconicity
 
-Open data, analyses & supplementary materials for a paper on the relation between form and meaning in iconic words. We look at the iconicity of 239 ideophones from 5 languages from three different perspectives: (i) using experimental measures of their guessability; (ii) coding structural correspondences between aspects of form and meaning; and (iii) collecting subjective iconicity ratings. We triangulate these measures to contribute to a more holistic, empirically grounded, theoretically informed, experimentally robust understanding of iconicity.
+Open data, analyses & supplementary materials for a paper on the relation between form and meaning in iconic words. We look at the iconicity of 239 ideophones from 5 languages in three ways: (i) using experimental measures of their guessability; (ii) coding structural correspondences between aspects of form and meaning; and (iii) collecting subjective iconicity ratings. We triangulate these measures to contribute to a more holistic, empirically grounded, theoretically informed, experimentally robust understanding of iconicity.
 
 ![](figures/fig3-panelAB.png)
 

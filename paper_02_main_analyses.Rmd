@@ -1,6 +1,6 @@
 ---
 title: "Triangulating iconicity: Coding analysis"
-author: "Mark Dingemanse, Stella Punselie, Bonnie McLean"
+author: "[anonymised for review]"
 date: "Updated `r format(Sys.Date())`"
 output: github_document
 editor_options: 
