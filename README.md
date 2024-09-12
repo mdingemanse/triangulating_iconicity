@@ -1,4 +1,4 @@
-# Triangulating iconicity
+# The Anatomy of Iconicity
 
 Open data, analyses & supplementary materials for a paper on the relation between form and meaning in iconic words. We look at the iconicity of 239 ideophones from 5 languages in three ways: (i) using experimental measures of their guessability; (ii) coding structural correspondences between aspects of form and meaning; and (iii) collecting subjective iconicity ratings. We triangulate these measures to contribute to a more holistic, empirically grounded, theoretically informed, experimentally robust understanding of iconicity.
 
@@ -11,6 +11,7 @@ Methods and results:
 * A code notebook recording the coding consistency procedure: [rendered for github](paper_01_consistency.md), [.Rmd source](paper_01_consistency.Rmd)
 * A code notebook recording the visual and statistical analyses: [rendered for github](paper_02_main_analyses.md), [.Rmd source](paper_02_main_analyses.Rmd)
 * A code notebook recording further exploratory analyses ([.R source](paper_03_exploratory_analyses.R))
+* A script for producing publication-quality plots ([.R source](paper_04_publication_quality_plots.R))
 * A [shiny app](https://bonnie-mclean.shinyapps.io/triangulatingiconicity/) to explore the dataset ([R source](app.R))
 
 Data files:
