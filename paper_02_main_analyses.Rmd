@@ -243,7 +243,7 @@ d |>
 ```
 
 
-### Figure 6: Ratings and cumulative iconicity
+### Figure 5: Ratings and cumulative iconicity
 
 ```{r ratings_and_C}
 
@@ -279,7 +279,7 @@ pB <- ggplot(data=dp,
   NULL
 
 plot_grid(pA,pB,labels=c("A","B"),label_size=14,rel_widths = c(1.4,2))
-ggsave("figures/fig6-panelAB_ratings.png",height=5,width=9,bg="white")
+ggsave("figures/fig5-panelAB_ratings.png",height=5,width=9,bg="white")
 
 ```
 
@@ -320,7 +320,7 @@ pB <- ggplot(data=dp,
   NULL
 
 plot_grid(pA,pB,labels=c("A","B"),label_size=14,rel_widths = c(1.4,2))
-ggsave("figures/fig6-panelAB_ratings_variant1.png",height=5,width=9,bg="white")
+ggsave("figures/fig5-panelAB_ratings_variant1.png",height=5,width=9,bg="white")
 
 
 # what about a drop shadow?

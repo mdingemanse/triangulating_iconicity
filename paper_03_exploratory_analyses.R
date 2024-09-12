@@ -2,6 +2,7 @@ library(ggrepel)
 library(tidyverse)
 library(readxl)
 library(viridis)
+library(ggthemes)
 #### For some reason writing the d dataset from paper_coding_2_analysis.Rmd
 #### to utf-8 and then reading it in here as a utf-8 file didn't work :(
 
@@ -44,9 +45,10 @@ dat$category <- factor(dat$category,levels=c("Sound","Motion","Shape","Texture",
 dat |>
   ggplot(aes(x=rating_z,y=score_z,color=C_cumulative))+geom_point()+
   labs(x="rating (z)",y="guessabing accuracy (z)",colour="cumulative iconicity")+
-  facet_wrap(~category)+
-  scale_colour_viridis(option="plasma")+
-  theme_minimal()
+  scale_colour_viridis(option="plasma",begin=0.3,end=0.9) +
+  theme_tufte() +
+  facet_wrap(~category)
+ggsave("figures/fig6-z_by_domain.png",height=4,width=9,bg="white")
 
 ## Compute correlations between guesses and ratings
 
