@@ -1,7 +1,7 @@
 Coding, consistency & calibration
 ================
-\[anonymized for review\]
-Updated 2024-04-03
+Mark Dingemanse, Stella Punselie, Bonnie McLean
+Rendered 2024-11-17
 
 ## Coding consistency
 
@@ -13,8 +13,8 @@ consistency, and recording coding/recoding decisions.
 ``` r
 # Packages
 list.of.packages <- c("tidyverse","readxl","writexl","irr")
-# new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-# if(length(new.packages)) install.packages(new.packages)
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
 lapply(list.of.packages, require, character.only=T)
 
 # useful functions
@@ -258,7 +258,8 @@ d.F.inconsistent <- d.F |>
   filter(check < 4)
 d.F.inconsistent <- d.F.inconsistent[, order(names(d.F.inconsistent))]
 
-write_xlsx(d.F.inconsistent,path="data/ideophones_F_consistency_2ndround.xlsx")
+#commented out to avoid overwriting
+#write_xlsx(d.F.inconsistent,path="data/ideophones_F_consistency_2ndround.xlsx")
 ```
 
 ### Consensus version

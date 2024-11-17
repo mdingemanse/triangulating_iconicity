@@ -1,7 +1,7 @@
 ---
 title: "Coding, consistency & calibration"
-author: "[anonymized for review]"
-date: "Updated `r format(Sys.Date())`"
+author: "Mark Dingemanse, Stella Punselie, Bonnie McLean"
+date: "Rendered `r format(Sys.Date())`"
 output: github_document
 editor_options: 
   chunk_output_type: console
@@ -21,8 +21,8 @@ Code notebook for combining coding from two coders, working out consistency, and
 ```{r preliminaries, results="hide"}
 # Packages
 list.of.packages <- c("tidyverse","readxl","writexl","irr")
-# new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-# if(length(new.packages)) install.packages(new.packages)
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
 lapply(list.of.packages, require, character.only=T)
 
 # useful functions
@@ -181,7 +181,8 @@ d.F.inconsistent <- d.F |>
   filter(check < 4)
 d.F.inconsistent <- d.F.inconsistent[, order(names(d.F.inconsistent))]
 
-write_xlsx(d.F.inconsistent,path="data/ideophones_F_consistency_2ndround.xlsx")
+#commented out to avoid overwriting
+#write_xlsx(d.F.inconsistent,path="data/ideophones_F_consistency_2ndround.xlsx")
 
 ```
 

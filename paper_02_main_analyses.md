@@ -1,11 +1,16 @@
 Triangulating iconicity: Coding analysis
 ================
-\[anonymised for review\]
-Updated 2024-06-15
+Mark Dingemanse, Stella Punselie, Bonnie McLean
+Updated 2024-11-17
 
 Code notebook for a study of the relation between linguistically
 informed iconicity coding and experimentally collected guessability
-scores.
+scores. Published paper is here:
+
+Punselie, S., McLean, B., & Dingemanse, M. (2024). The Anatomy of
+Iconicity: Cumulative Structural Analogies Underlie Objective and
+Subjective Measures of Iconicity. *Open Mind*, 8, 1191–1212. doi:
+[10.1162/opmi_a_00162](https://doi.org/10.1162/opmi_a_00162)
 
 ## Setup
 
@@ -271,7 +276,7 @@ d |>
     ## 8 ton ton         Japanese     1        4.41  0.95
     ## 9 ɟtoonɟtoonɟtoon Semai        1        3.74  0.45
 
-### Figure 6: Ratings and cumulative iconicity
+### Figure 5: Ratings and cumulative iconicity
 
 ``` r
 # panel A: ratings by study and cumulative iconicity
@@ -310,7 +315,7 @@ plot_grid(pA,pB,labels=c("A","B"),label_size=14,rel_widths = c(1.4,2))
 ![](figures_md/ratings_and_C-1.png)<!-- -->
 
 ``` r
-ggsave("figures/fig6-panelAB_ratings.png",height=5,width=9,bg="white")
+ggsave("figures/fig5-panelAB_ratings.png",height=5,width=9,bg="white")
 ```
 
 R1 asks for a variant of this figure where the dots have black outline,
@@ -355,7 +360,7 @@ plot_grid(pA,pB,labels=c("A","B"),label_size=14,rel_widths = c(1.4,2))
 ![](figures_md/R1_request-1.png)<!-- -->
 
 ``` r
-ggsave("figures/fig6-panelAB_ratings_variant1.png",height=5,width=9,bg="white")
+ggsave("figures/fig5-panelAB_ratings_variant1.png",height=5,width=9,bg="white")
 
 
 # what about a drop shadow?

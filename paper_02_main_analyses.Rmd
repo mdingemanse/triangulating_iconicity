@@ -1,19 +1,22 @@
 ---
 title: "Triangulating iconicity: Coding analysis"
-author: "[anonymised for review]"
+author: "Mark Dingemanse, Stella Punselie, Bonnie McLean"
 date: "Updated `r format(Sys.Date())`"
 output: github_document
 editor_options: 
   chunk_output_type: console
 ---
-  
+
 ```{r global_options, include=FALSE}
 knitr::opts_chunk$set(fig.width=8, fig.height=6, fig.path='figures_md/',
                       echo=TRUE, warning=FALSE, message=FALSE)
 
 ```
 
-Code notebook for a study of the relation between linguistically informed iconicity coding and experimentally collected guessability scores.
+Code notebook for a study of the relation between linguistically informed iconicity coding and experimentally collected guessability scores. Published paper is here:
+
+Punselie, S., McLean, B., & Dingemanse, M. (2024). The Anatomy of Iconicity: Cumulative Structural Analogies Underlie Objective and Subjective Measures of Iconicity. *Open Mind*, 8, 1191–1212. doi: [10.1162/opmi_a_00162](https://doi.org/10.1162/opmi_a_00162)
+
 
 ## Setup
 
@@ -32,6 +35,7 @@ sd.na <- function(x) sd(x, na.rm = T)
 ```
 
 ## Data
+
 Here we load the data. For earlier processing operations, see `paper_00_data_processing.R`.
 
 ```{r load_data}
@@ -42,6 +46,7 @@ d.ratings.full <- readr::read_csv("data/ideophones_rated.csv")
 ```
 
 ## Figures
+
 Here we generate some descriptive stats and create the main figures for the paper. Note that Figures 1 and 2 in the paper are illustrative and their final versions are not generated in R.
 
 ```{r descriptive_stats}
@@ -53,6 +58,7 @@ d |>
 ```
 
 ### Figure 2: Overview panel
+
 The overview of the triangulation method is created separately in CorelDraw but we use the data from the guessability studies as a canvas.
 
 ```{r figures_paper_guessability_canvas}
@@ -242,7 +248,6 @@ d |>
 
 ```
 
-
 ### Figure 5: Ratings and cumulative iconicity
 
 ```{r ratings_and_C}
@@ -284,7 +289,6 @@ ggsave("figures/fig5-panelAB_ratings.png",height=5,width=9,bg="white")
 ```
 
 R1 asks for a variant of this figure where the dots have black outline, to make the most yellow dots more easily visible. A second variant with subtle dropshadow may be even better.
-
 
 ```{r R1_request}
 
@@ -375,9 +379,10 @@ ggsave("figures/fig6-panelAB_ratings_variant2.png",height=5,width=9,bg="white")
 ## Numbers
 
 ### Coding and guessability
+
 As the visualizations already make clear there is a non-trivial positive relation between the presence of iconic mappings (in a cumulative sense) and the guessability score determined in experimental work.
 
-The simplest thing to do is a correlation. 
+The simplest thing to do is a correlation.
 
 ```{r congruency_stats_1}
 
@@ -400,7 +405,7 @@ But it's probably more useful to predict logodds score on the basis of what we k
 
 A null model `m0` predices logodds by paper, controlling for item-level differences. A model `m1` with cumulative congruence as an additional fixed effect fares significantly better.
 
-For the fixed effects, m1 lists a 0.182 improvement in logodds for C_cumulative. According to my interpretation this means that every added iconic feature leads to a ~7% boost in proportion correct.
+For the fixed effects, m1 lists a 0.182 improvement in logodds for C_cumulative. According to my interpretation this means that every added iconic feature leads to a \~7% boost in proportion correct.
 
 Also note that, accounting for possible difference in coded cumulative iconicity across studies, the Language paper has a negative fixed effect of -0.524, which translates to a 19% guessability penalty for the relatively unforgiving method of the Language study (or alternatively, a similar-sized boost for the methods of the Collabra study).
 
@@ -427,9 +432,9 @@ We can assess the relative weight of different features using model comparison. 
 
 The model estimates given in the output of `fixef(m8)` represent the contribution of a given fixed effect while controlling for others, but they are NOT additive (i.e. can't be summed to arrive at the effect of `C_cumulative`).
 
-* `C_aspect`: 0.181 logodds (+7% boost)
-* `C_modality`: 0.177 logodds (+7% boost)
-* `C_length`: 0.443 logodds (+17% boost)
+-   `C_aspect`: 0.181 logodds (+7% boost)
+-   `C_modality`: 0.177 logodds (+7% boost)
+-   `C_length`: 0.443 logodds (+17% boost)
 
 ```{r congruency_stats_3}
 
@@ -462,7 +467,7 @@ probitlink(fixef(m8)[5],inverse=T)-0.5 # length
 
 ```
 
-### Structural correspondences and semantic domains 
+### Structural correspondences and semantic domains
 
 Our prediction is that Sound and Motion ideophones should show more structural correspondences than the other domains. This is borne out.
 
@@ -517,7 +522,6 @@ effsize::cohen.d(group1,group2)
 
 ```
 
-
 ### Study B: Rating iconicity
 
 Here we look at the iconicity ratings for all ideophones across both studies.
@@ -546,7 +550,6 @@ d.ratings.full |>
 
 There appears to be a positive correlation between the rating and guessing data.
 
-
 ### Ratings: numbers
 
 Iconicity ratings by semantic domain
@@ -564,14 +567,13 @@ d.ratings.full |>
 
 ```
 
-
 How do iconicity ratings relate to structural correspondences?
 
 ```{r coding_ratings_correlation}
 correlation_coding_ratings <- cor.test(d$rating_z,d$C_cumulative,method="pearson")
 ```
 
-A simple correlation test suggests a positive relation between iconicity rating and cumulative iconicity: Pearson's *r* = `r round(correlation_coding_ratings$estimate,2)`, p = `r correlation_coding_ratings$p.value`. 
+A simple correlation test suggests a positive relation between iconicity rating and cumulative iconicity: Pearson's *r* = `r round(correlation_coding_ratings$estimate,2)`, p = `r correlation_coding_ratings$p.value`.
 
 As above, we can go a bit deeper by using mixed effects modelling. We expect a smaller effect of study on the ratings, as the difference in design in terms of selection of foils falls away.
 
@@ -590,7 +592,7 @@ fixef(m1)
 
 ```
 
-We find that a model with cumulative iconicity as an additional fixed effect achieves a fit that is significantly better than a null model without it (χ2(1) = `r m0m1.chisquare`, p = `r m0m1.pvalue`, log likelihood difference `r m0m1.loglikdiff`). The fixed effect of cumulative iconicity is estimated at `r fixef(m1)[["C_cumulative"]]`. 
+We find that a model with cumulative iconicity as an additional fixed effect achieves a fit that is significantly better than a null model without it (χ2(1) = `r m0m1.chisquare`, p = `r m0m1.pvalue`, log likelihood difference `r m0m1.loglikdiff`). The fixed effect of cumulative iconicity is estimated at `r fixef(m1)[["C_cumulative"]]`.
 
 ```{r ratings_stats_3}
 
@@ -625,10 +627,8 @@ fixef(m8)
 
 We can also assess the relative weight of different features using model comparison. We build models by adding the congruency measures in rank order of attestation in the coded data. Doing this we find that C_aspect, C_modality and C_length are responsible for the bulk of the variance. Compared to the null model that only represents the baseline difference between studies, model `m8` fares significantly better (Chisquare = `r m0m8.chisquare`, p = `r m0m8.pvalue`, log likelihood difference = `r m0m8.loglikdiff`).
 
-
 The model estimates given in the output of `fixef(m8)` represent the contribution of a given fixed effect while controlling for others, but they are NOT additive (i.e. they cannot be summed to arrive at the effect of `C_cumulative`).
 
-* `C_length`: `r round(m8.estimates["C_length"],2)`
-* `C_modality`: `r round(m8.estimates["C_modality"],2)`
-* `C_aspect`: `r round(m8.estimates["C_aspect"],2)`
-
+-   `C_length`: `r round(m8.estimates["C_length"],2)`
+-   `C_modality`: `r round(m8.estimates["C_modality"],2)`
+-   `C_aspect`: `r round(m8.estimates["C_aspect"],2)`
